@@ -1,15 +1,15 @@
-# @eunia/shared
+# Shared utilities
 
-Small runtime utilities shared by Eunia packages.
+Small runtime utilities used across Eunia.
 
 ```sh
-bun add @eunia/shared
+bun add eunia@alpha
 ```
 
 The current public surface is a configurable logger:
 
 ```ts
-import { ConsoleLogger, SilentLogger } from "@eunia/shared";
+import { ConsoleLogger, SilentLogger } from "eunia";
 
 const logger = new ConsoleLogger({ level: "warn", scope: "my-bot" });
 const quiet = new SilentLogger();

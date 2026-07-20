@@ -1,16 +1,16 @@
-# @eunia/commands
+# Commands
 
-`@eunia/commands` uses the same command tree for Discord slash commands and
-optional message prefixes. The class body is the command: every fact is a
+Eunia's command module uses the same command tree for Discord slash commands
+and optional message prefixes. The class body is the command: every fact is a
 named field, every behavior a method, no constructor. Each invocation gets a
 new context.
 
 ```sh
-bun add @eunia/commands
+bun add eunia@alpha
 ```
 
-`@eunia/client` creates the manager for most bots. When using this lower
-package directly, provide a `CommandHost` with application IDs, REST `put`
+The Eunia client creates the manager for most bots. When using the command
+module directly, provide a `CommandHost` with application IDs, REST `put`
 access, owner IDs, and an error reporter.
 
 ```ts
@@ -20,7 +20,7 @@ import {
   option,
   type CommandContext,
   type CommandHost,
-} from "@eunia/commands";
+} from "eunia";
 
 declare const host: CommandHost;
 
@@ -56,7 +56,7 @@ Declare component and modal handlers as fields; components reference the
 handler and the wire `custom_id` is derived from command, field, and args:
 
 ```ts
-import { onButton } from "@eunia/commands";
+import { onButton } from "eunia";
 
 class ConfirmCommand extends Command {
   name = "confirm";

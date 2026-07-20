@@ -7,7 +7,7 @@ monitor, and clean up when the client stops.
 ## Lifecycle
 
 ```ts
-import type { EuniaModule } from "@eunia/client";
+import type { EuniaModule } from "eunia";
 
 export const databaseModule: EuniaModule = {
   name: "database",

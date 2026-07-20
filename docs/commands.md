@@ -12,13 +12,13 @@ import {
   Command,
   CommandGroup,
   Intents,
+  PermissionFlags,
   option,
   type AutocompleteContext,
   type CommandContext,
   type CommandGuard,
   type CommandMiddleware,
-} from "@eunia/client";
-import { PermissionFlags } from "@eunia/types";
+} from "eunia";
 
 export class GreetCommand extends Command {
   name = "greet";

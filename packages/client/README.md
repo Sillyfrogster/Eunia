@@ -1,14 +1,14 @@
-# @eunia/client
+# Client
 
-The main Eunia package. It connects the gateway, REST client, cache,
-structures, command framework, domain accessors, and extension modules.
+The Eunia client connects the gateway, REST client, cache, structures,
+command framework, domain accessors, and extension modules.
 
 ```sh
-bun add @eunia/client
+bun add eunia@alpha
 ```
 
 ```ts
-import { Client, Command, Intents, type CommandContext } from "@eunia/client";
+import { Client, Command, Intents, type CommandContext } from "eunia";
 
 const token = process.env["DISCORD_TOKEN"]?.trim();
 const guildId = process.env["DISCORD_GUILD_ID"]?.trim();

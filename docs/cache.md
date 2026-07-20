@@ -79,7 +79,7 @@ Implement five operations to use another system. This example adapts an
 existing key-value backend:
 
 ```ts
-import type { CacheAdapter } from "@eunia/client";
+import type { CacheAdapter } from "eunia";
 
 interface KeyValueBackend {
   get(key: string): Promise<unknown | undefined>;

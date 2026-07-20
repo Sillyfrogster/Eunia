@@ -1,13 +1,12 @@
-# @eunia/structures
+# Structures
 
-`@eunia/structures` turns Discord payloads into snapshot objects with useful
+Eunia's structures turn Discord payloads into snapshot objects with useful
 methods. Edit methods return new structures instead of changing the instance
-that made the request. Raw payload types live in `@eunia/types` and are
-imported through a namespace, so the hydrated `Message` class and the raw
-`types.Message` payload never collide.
+that made the request. Import raw payload types through a namespace so the
+hydrated `Message` class and the raw `types.Message` payload never collide.
 
 ```sh
-bun add @eunia/structures
+bun add eunia@alpha
 ```
 
 Structures keep their original payload in `raw`. Cache entries remain plain
@@ -72,7 +71,7 @@ Permissions are plain `bigint` values. Combine flags with `|` and `& ~`; the
 library ships only what operators cannot say:
 
 ```ts
-import { PermissionFlags, can, missing } from "@eunia/types";
+import { PermissionFlags, can, missing } from "eunia";
 
 member.can(PermissionFlags.BanMembers);
 missing(channel.permissionsFor(member), PermissionFlags.SendMessages);

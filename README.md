@@ -11,10 +11,10 @@ Voice support is outside this release and will be handled separately.
 
 Eunia requires Bun 1.3.14 or newer.
 
-Install the client package:
+Install Eunia:
 
 ```sh
-bun add @eunia/client
+bun add eunia@alpha
 ```
 
 Create a command class and start the client:
@@ -25,7 +25,7 @@ import {
   Command,
   Intents,
   type CommandContext,
-} from "@eunia/client";
+} from "eunia";
 
 const token = process.env["DISCORD_TOKEN"]?.trim();
 const guildId = process.env["DISCORD_GUILD_ID"]?.trim();
@@ -125,22 +125,22 @@ const client = new Client({
 Pass a `CacheAdapter` to use another store. Eunia always keeps a bounded hot
 memory layer, so structure relations stay synchronous.
 
-## Packages
+## Modules
 
-| Package | Purpose |
+| Module | Purpose |
 | --- | --- |
-| `@eunia/client` | Main client, event routing, domain accessors, modules, and public re-exports |
-| `@eunia/commands` | Slash-first command framework with optional prefixes |
-| `@eunia/structures` | Discord structures, Sendable normalization, and helpers |
-| `@eunia/cache` | Bounded memory, Redis, Valkey, and custom cache adapters |
-| `@eunia/gateway` | WebSocket sessions, heartbeats, resume, and sharding |
-| `@eunia/rest` | HTTP transport, rate limits, retries, uploads, and route binding |
-| `@eunia/helpers` | Opt-in embed, component, and modal content templates |
-| `@eunia/shared` | Logger interfaces and shared runtime utilities |
-| `@eunia/types` | Discord API payloads, enums, and shared protocol types |
+| Client | Event routing, domain accessors, modules, and public re-exports |
+| Commands | Slash-first command framework with optional prefixes |
+| Structures | Discord structures, Sendable normalization, and helpers |
+| Cache | Bounded memory, Redis, Valkey, and custom cache adapters |
+| Gateway | WebSocket sessions, heartbeats, resume, and sharding |
+| REST | HTTP transport, rate limits, retries, uploads, and route binding |
+| Helpers | Opt-in embed, component, and modal content templates |
+| Shared | Logger interfaces and shared runtime utilities |
+| Types | Discord API payloads, enums, and shared protocol types |
 
-Most bots only need `@eunia/client`. The lower packages are public so modules
-can depend on the smallest layer they need.
+Eunia ships as one npm package. Its internal workspaces keep the codebase
+modular without requiring users to install several packages.
 
 ## Guides
 
@@ -159,3 +159,7 @@ bun run coverage
 
 Tests use local fakes and a local gateway. They do not need a Discord token.
 Copy `.env.example` to `.env` only when you want to run a bot against Discord.
+
+## License
+
+Eunia is available under the [MIT License](LICENSE).

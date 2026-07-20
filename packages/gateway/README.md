@@ -1,9 +1,9 @@
-# @eunia/gateway
+# Gateway
 
 Eunia's Bun-native Discord gateway transport.
 
 ```sh
-bun add @eunia/gateway
+bun add eunia@alpha
 ```
 
 It provides:
@@ -16,5 +16,5 @@ It provides:
 - Outbound payload rate limits and size checks.
 - Presence updates and guild member requests.
 
-Most bots should use `@eunia/client`. Use this package directly when you want
+Most bots should use the Eunia client. Use the gateway directly when you want
 raw gateway sessions without structures or commands.

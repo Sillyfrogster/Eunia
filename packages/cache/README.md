@@ -1,10 +1,10 @@
-# @eunia/cache
+# Cache
 
-`@eunia/cache` keeps frequently used Discord payloads in bounded memory. It
+Eunia's cache keeps frequently used Discord payloads in bounded memory. It
 can also read from and write to Redis, Valkey, or a custom adapter.
 
 ```sh
-bun add @eunia/cache
+bun add eunia@alpha
 ```
 
 ## Create a cache
@@ -12,7 +12,7 @@ bun add @eunia/cache
 The default cache only uses memory.
 
 ```ts
-import { Cache } from "@eunia/cache";
+import { Cache } from "eunia";
 
 const cache = new Cache({
   policies: {

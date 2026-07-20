@@ -1,13 +1,13 @@
-# @eunia/rest
+# REST
 
 Eunia's Bun-native Discord HTTP transport.
 
 ```sh
-bun add @eunia/rest
+bun add eunia@alpha
 ```
 
 ```ts
-import { EuniaRest, routePath } from "@eunia/rest";
+import { EuniaRest, routePath } from "eunia";
 
 const rest = new EuniaRest({ token });
 const currentUser = await rest.get(routePath("/users/@me"));
