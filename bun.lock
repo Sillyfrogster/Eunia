@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "eunia",
+      "name": "@sillyfrogster/eunia",
       "devDependencies": {
         "@types/bun": "^1.3.14",
         "tsdown": "^0.22.12",
