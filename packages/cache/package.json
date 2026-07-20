@@ -1,0 +1,16 @@
+{
+  "name": "@eunia/cache",
+  "version": "0.1.0-alpha.1",
+  "description": "Bounded memory and external cache stores for Eunia",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3.14"
+  },
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": ["src", "README.md"],
+  "publishConfig": { "access": "public" },
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./src/index.ts" }
+  }
+}
