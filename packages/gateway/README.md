@@ -3,7 +3,7 @@
 Eunia's Bun-native Discord gateway transport.
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 It provides:

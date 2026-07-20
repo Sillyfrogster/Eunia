@@ -6,7 +6,7 @@ named field, every behavior a method, no constructor. Each invocation gets a
 new context.
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 The Eunia client creates the manager for most bots. When using the command
@@ -20,7 +20,7 @@ import {
   option,
   type CommandContext,
   type CommandHost,
-} from "eunia";
+} from "@sillyfrogster/eunia";
 
 declare const host: CommandHost;
 
@@ -56,7 +56,7 @@ Declare component and modal handlers as fields; components reference the
 handler and the wire `custom_id` is derived from command, field, and args:
 
 ```ts
-import { onButton } from "eunia";
+import { onButton } from "@sillyfrogster/eunia";
 
 class ConfirmCommand extends Command {
   name = "confirm";

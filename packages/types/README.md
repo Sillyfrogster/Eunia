@@ -3,7 +3,7 @@
 Discord API v10 payload types and protocol enums used by Eunia.
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 The type module covers common users, guilds, members, roles, channels, messages,
@@ -16,7 +16,7 @@ Raw payload types use bare protocol nouns; qualify them through the import
 path:
 
 ```ts
-import { types } from "eunia";
+import { types } from "@sillyfrogster/eunia";
 
 const message: types.Message = payload;
 const allowed = types.can(memberPermissions, types.PermissionFlags.BanMembers);

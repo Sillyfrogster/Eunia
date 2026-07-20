@@ -3,13 +3,13 @@
 Small runtime utilities used across Eunia.
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 The current public surface is a configurable logger:
 
 ```ts
-import { ConsoleLogger, SilentLogger } from "eunia";
+import { ConsoleLogger, SilentLogger } from "@sillyfrogster/eunia";
 
 const logger = new ConsoleLogger({ level: "warn", scope: "my-bot" });
 const quiet = new SilentLogger();

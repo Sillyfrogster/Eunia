@@ -3,11 +3,11 @@
 Eunia's Bun-native Discord HTTP transport.
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 ```ts
-import { EuniaRest, routePath } from "eunia";
+import { EuniaRest, routePath } from "@sillyfrogster/eunia";
 
 const rest = new EuniaRest({ token });
 const currentUser = await rest.get(routePath("/users/@me"));

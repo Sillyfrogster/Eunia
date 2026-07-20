@@ -18,7 +18,7 @@ import {
   type CommandContext,
   type CommandGuard,
   type CommandMiddleware,
-} from "eunia";
+} from "@sillyfrogster/eunia";
 
 export class GreetCommand extends Command {
   name = "greet";

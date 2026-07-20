@@ -14,7 +14,7 @@ Eunia requires Bun 1.3.14 or newer.
 Install Eunia:
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 Create a command class and start the client:
@@ -25,7 +25,7 @@ import {
   Command,
   Intents,
   type CommandContext,
-} from "eunia";
+} from "@sillyfrogster/eunia";
 
 const token = process.env["DISCORD_TOKEN"]?.trim();
 const guildId = process.env["DISCORD_GUILD_ID"]?.trim();

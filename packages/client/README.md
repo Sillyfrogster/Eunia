@@ -4,11 +4,11 @@ The Eunia client connects the gateway, REST client, cache, structures,
 command framework, domain accessors, and extension modules.
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 ```ts
-import { Client, Command, Intents, type CommandContext } from "eunia";
+import { Client, Command, Intents, type CommandContext } from "@sillyfrogster/eunia";
 
 const token = process.env["DISCORD_TOKEN"]?.trim();
 const guildId = process.env["DISCORD_GUILD_ID"]?.trim();

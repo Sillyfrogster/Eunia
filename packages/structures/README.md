@@ -6,7 +6,7 @@ that made the request. Import raw payload types through a namespace so the
 hydrated `Message` class and the raw `types.Message` payload never collide.
 
 ```sh
-bun add eunia@alpha
+bun add @sillyfrogster/eunia@alpha
 ```
 
 Structures keep their original payload in `raw`. Cache entries remain plain
@@ -71,7 +71,7 @@ Permissions are plain `bigint` values. Combine flags with `|` and `& ~`; the
 library ships only what operators cannot say:
 
 ```ts
-import { PermissionFlags, can, missing } from "eunia";
+import { PermissionFlags, can, missing } from "@sillyfrogster/eunia";
 
 member.can(PermissionFlags.BanMembers);
 missing(channel.permissionsFor(member), PermissionFlags.SendMessages);
