@@ -1,0 +1,106 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "eunia",
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "typescript": "^5.5.0",
+      },
+    },
+    "packages/cache": {
+      "name": "@eunia/cache",
+      "version": "0.1.0-alpha.1",
+    },
+    "packages/client": {
+      "name": "@eunia/client",
+      "version": "0.1.0-alpha.1",
+      "dependencies": {
+        "@eunia/cache": "workspace:*",
+        "@eunia/commands": "workspace:*",
+        "@eunia/gateway": "workspace:*",
+        "@eunia/rest": "workspace:*",
+        "@eunia/shared": "workspace:*",
+        "@eunia/structures": "workspace:*",
+        "@eunia/types": "workspace:*",
+      },
+    },
+    "packages/commands": {
+      "name": "@eunia/commands",
+      "version": "0.1.0-alpha.1",
+      "dependencies": {
+        "@eunia/structures": "workspace:*",
+        "@eunia/types": "workspace:*",
+      },
+    },
+    "packages/gateway": {
+      "name": "@eunia/gateway",
+      "version": "0.1.0-alpha.1",
+      "dependencies": {
+        "@eunia/shared": "workspace:*",
+      },
+    },
+    "packages/helpers": {
+      "name": "@eunia/helpers",
+      "version": "0.1.0-alpha.1",
+      "dependencies": {
+        "@eunia/client": "workspace:*",
+        "@eunia/types": "workspace:*",
+      },
+    },
+    "packages/rest": {
+      "name": "@eunia/rest",
+      "version": "0.1.0-alpha.1",
+      "dependencies": {
+        "@eunia/shared": "workspace:*",
+      },
+    },
+    "packages/shared": {
+      "name": "@eunia/shared",
+      "version": "0.1.0-alpha.1",
+    },
+    "packages/structures": {
+      "name": "@eunia/structures",
+      "version": "0.1.0-alpha.1",
+      "dependencies": {
+        "@eunia/cache": "workspace:*",
+        "@eunia/rest": "workspace:*",
+        "@eunia/types": "workspace:*",
+      },
+    },
+    "packages/types": {
+      "name": "@eunia/types",
+      "version": "0.1.0-alpha.1",
+    },
+  },
+  "packages": {
+    "@eunia/cache": ["@eunia/cache@workspace:packages/cache"],
+
+    "@eunia/client": ["@eunia/client@workspace:packages/client"],
+
+    "@eunia/commands": ["@eunia/commands@workspace:packages/commands"],
+
+    "@eunia/gateway": ["@eunia/gateway@workspace:packages/gateway"],
+
+    "@eunia/helpers": ["@eunia/helpers@workspace:packages/helpers"],
+
+    "@eunia/rest": ["@eunia/rest@workspace:packages/rest"],
+
+    "@eunia/shared": ["@eunia/shared@workspace:packages/shared"],
+
+    "@eunia/structures": ["@eunia/structures@workspace:packages/structures"],
+
+    "@eunia/types": ["@eunia/types@workspace:packages/types"],
+
+    "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
+
+    "@types/node": ["@types/node@26.1.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-O0A1G3xPGy4w7AgQdAQYUlQ+BKk2Oovw8eRpofyp5KdBZULnbe+WqaOVNrm705SHphCiG4XHsACrSmPu1f+Kgw=="],
+
+    "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
+
+    "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "undici-types": ["undici-types@8.3.0", "", {}, "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="],
+  }
+}
