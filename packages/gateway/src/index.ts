@@ -1,8 +1,3 @@
-/**
- * Public surface of @eunia/gateway. Anything not exported here is an
- * internal detail.
- */
-
 export {
   Shard,
   ShardState,

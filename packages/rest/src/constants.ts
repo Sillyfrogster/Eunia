@@ -35,7 +35,7 @@ export const DEFAULT_BASE_URL = "https://discord.com/api";
 
 /** Discord requires the shape `DiscordBot ($url, $version)`. */
 export const DEFAULT_USER_AGENT =
-  "DiscordBot (https://github.com/Sillyfrogster/eunia, 0.1.0-alpha.1)";
+  "DiscordBot (https://github.com/Sillyfrogster/Eunia, 0.1.0-alpha.1)";
 
 /**
  * Abort a request with no response after this long, so a hung connection

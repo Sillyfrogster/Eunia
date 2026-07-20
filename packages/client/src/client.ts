@@ -85,6 +85,10 @@ export interface MessageDeleteBulkInfo extends types.MessageDeleteBulkEvent {
 }
 
 export interface Client {
+  embeds: import("../../helpers/src").EmbedRegistry;
+  components: import("../../helpers/src").ComponentRegistry;
+  modals: import("../../helpers/src").ModalRegistry;
+
   on(event: "ready", listener: (user: User) => void): this;
   on(event: "stopped", listener: () => void): this;
   on(event: "stateChange", listener: (state: ClientState, previous: ClientState) => void): this;

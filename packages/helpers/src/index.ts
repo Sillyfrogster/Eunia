@@ -28,14 +28,6 @@ export type ModalRegistry<T extends ModalTemplates = ModalTemplates> = TemplateR
   T
 >;
 
-declare module "@eunia/client" {
-  interface Client {
-    embeds: EmbedRegistry;
-    components: ComponentRegistry;
-    modals: ModalRegistry;
-  }
-}
-
 /** Defines embed templates; keys are the template names. */
 export function defineEmbeds<T extends EmbedTemplates>(templates: T): EmbedRegistry<T> {
   return createRegistry<types.Embed, T>("embed", templates);

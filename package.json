@@ -1,7 +1,33 @@
 {
   "name": "eunia",
-  "private": true,
+  "version": "0.1.0-alpha.1",
+  "description": "A modular TypeScript Discord library built for Bun",
+  "keywords": ["discord", "discord-api", "bot", "bun", "typescript"],
   "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": false,
+  "author": "Sillyfrogster",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sillyfrogster/Eunia.git"
+  },
+  "homepage": "https://github.com/Sillyfrogster/Eunia#readme",
+  "bugs": {
+    "url": "https://github.com/Sillyfrogster/Eunia/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "packageManager": "bun@1.3.14",
   "engines": {
     "bun": ">=1.3.14"
@@ -10,13 +36,16 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "tsdown src/index.ts --dts --platform node --target esnext",
     "check": "bun run typecheck && bun test --parallel=1",
     "coverage": "bun run scripts/coverage.ts",
+    "prepack": "bun run build",
     "test": "bun test --parallel=1",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
+    "tsdown": "^0.22.12",
     "typescript": "^5.5.0"
   }
 }
