@@ -1,0 +1,23 @@
+{
+  "name": "@eunia/client",
+  "version": "0.1.0-alpha.1",
+  "description": "Configurable Discord client and module host for Eunia",
+  "type": "module",
+  "engines": { "bun": ">=1.3.14" },
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": ["src", "README.md"],
+  "publishConfig": { "access": "public" },
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./src/index.ts" }
+  },
+  "dependencies": {
+    "@eunia/cache": "workspace:*",
+    "@eunia/commands": "workspace:*",
+    "@eunia/gateway": "workspace:*",
+    "@eunia/rest": "workspace:*",
+    "@eunia/shared": "workspace:*",
+    "@eunia/structures": "workspace:*",
+    "@eunia/types": "workspace:*"
+  }
+}

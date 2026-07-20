@@ -1,0 +1,201 @@
+import type * as types from "@eunia/types";
+import {
+  Guild,
+  GuildMember,
+  Role,
+  memberCacheKey,
+  removeCachedGuildMember,
+  upsertCachedGuildMember,
+  upsertCachedGuildMembers,
+  type StructureContext,
+} from "@eunia/structures";
+import type { DispatchHandlerMap } from "./types";
+
+export const guildHandlers: DispatchHandlerMap = {
+  GUILD_CREATE(client, ctx, data) {
+    const raw = data as types.Guild;
+    cacheGuild(ctx, raw);
+    client.emit("guildCreate", new Guild(raw, ctx));
+  },
+
+  GUILD_UPDATE(client, ctx, data) {
+    const patch = data as types.Guild;
+    const previousRaw = ctx.cache.guilds.resolve(patch.id);
+    const raw = previousRaw === undefined ? patch : { ...previousRaw, ...patch };
+    cacheGuild(ctx, raw);
+    client.emit(
+      "guildUpdate",
+      new Guild(raw, ctx),
+      previousRaw === undefined ? undefined : new Guild(previousRaw, ctx),
+    );
+  },
+
+  GUILD_DELETE(client, ctx, data) {
+    const event = data as types.GuildDeleteEvent;
+    const previousRaw = ctx.cache.guilds.resolve(event.id);
+    const unavailable = event.unavailable === true;
+    if (unavailable && previousRaw !== undefined) {
+      ctx.cache.guilds.set(event.id, { ...previousRaw, unavailable: true });
+    } else {
+      ctx.cache.guilds.delete(event.id);
+      clearGuildCaches(ctx, event.id, previousRaw);
+    }
+    client.emit("guildDelete", {
+      id: event.id,
+      unavailable,
+      ...(previousRaw === undefined ? {} : { guild: new Guild(previousRaw, ctx) }),
+    });
+  },
+
+  GUILD_MEMBER_ADD(client, ctx, data) {
+    const { guild_id: guildId, ...raw } = data as types.GuildMemberAddEvent;
+    const userId = raw.user?.id;
+    if (userId === undefined) return;
+    upsertCachedGuildMember(ctx, guildId, userId, raw);
+    client.emit("guildMemberAdd", new GuildMember(raw, ctx, guildId, userId));
+  },
+
+  GUILD_MEMBER_UPDATE(client, ctx, data) {
+    const event = data as types.GuildMemberUpdateEvent;
+    const key = memberCacheKey(event.guild_id, event.user.id);
+    const previousRaw = ctx.cache.members.resolve(key);
+    const { guild_id: _guildId, joined_at: _joinedAt, ...update } = event;
+    const raw: types.GuildMember = {
+      ...previousRaw,
+      ...update,
+      user: event.user,
+      roles: event.roles,
+      joined_at: event.joined_at ?? previousRaw?.joined_at ?? new Date(0).toISOString(),
+      deaf: event.deaf ?? previousRaw?.deaf ?? false,
+      mute: event.mute ?? previousRaw?.mute ?? false,
+      flags: previousRaw?.flags ?? 0,
+    };
+    upsertCachedGuildMember(ctx, event.guild_id, event.user.id, raw);
+    client.emit(
+      "guildMemberUpdate",
+      new GuildMember(raw, ctx, event.guild_id, event.user.id),
+      previousRaw === undefined
+        ? undefined
+        : new GuildMember(previousRaw, ctx, event.guild_id, event.user.id),
+    );
+  },
+
+  GUILD_MEMBER_REMOVE(client, ctx, data) {
+    const event = data as types.GuildMemberRemoveEvent;
+    const key = memberCacheKey(event.guild_id, event.user.id);
+    const previousRaw = ctx.cache.members.resolve(key);
+    removeCachedGuildMember(ctx, event.guild_id, event.user.id);
+    ctx.cache.users.set(event.user.id, event.user);
+    client.emit("guildMemberRemove", {
+      guildId: event.guild_id,
+      userId: event.user.id,
+      ...(previousRaw === undefined
+        ? {}
+        : { member: new GuildMember(previousRaw, ctx, event.guild_id, event.user.id) }),
+    });
+  },
+
+  GUILD_MEMBERS_CHUNK(_client, ctx, data) {
+    const chunk = data as {
+      guild_id: string;
+      members: types.GuildMember[];
+    };
+    upsertCachedGuildMembers(
+      ctx,
+      chunk.guild_id,
+      chunk.members.flatMap((raw) => {
+        const userId = raw.user?.id;
+        return userId === undefined ? [] : [{ userId, raw }];
+      }),
+    );
+  },
+
+  GUILD_ROLE_CREATE(client, ctx, data) {
+    const event = data as types.GuildRoleEvent;
+    ctx.cache.roles.set(event.role.id, event.role);
+    updateGuildRoles(ctx, event.guild_id, (roles) => [...roles, event.role]);
+    client.emit("roleCreate", new Role(event.role, ctx, event.guild_id));
+  },
+
+  GUILD_ROLE_UPDATE(client, ctx, data) {
+    const event = data as types.GuildRoleEvent;
+    const previous = ctx.cache.roles.resolve(event.role.id);
+    ctx.cache.roles.set(event.role.id, event.role);
+    updateGuildRoles(ctx, event.guild_id, (roles) => [
+      ...roles.filter((role) => role.id !== event.role.id),
+      event.role,
+    ]);
+    client.emit(
+      "roleUpdate",
+      new Role(event.role, ctx, event.guild_id),
+      previous === undefined ? undefined : new Role(previous, ctx, event.guild_id),
+    );
+  },
+
+  GUILD_ROLE_DELETE(client, ctx, data) {
+    const event = data as types.GuildRoleDeleteEvent;
+    const previous = ctx.cache.roles.resolve(event.role_id);
+    ctx.cache.roles.delete(event.role_id);
+    updateGuildRoles(ctx, event.guild_id, (roles) =>
+      roles.filter((role) => role.id !== event.role_id),
+    );
+    client.emit("roleDelete", {
+      guildId: event.guild_id,
+      roleId: event.role_id,
+      ...(previous === undefined ? {} : { role: new Role(previous, ctx, event.guild_id) }),
+    });
+  },
+};
+
+function cacheGuild(ctx: StructureContext, raw: types.Guild): void {
+  ctx.cache.guilds.set(raw.id, raw);
+  for (const channel of raw.channels ?? []) {
+    const withGuild: types.Channel = { ...channel, guild_id: raw.id };
+    ctx.cache.channels.set(channel.id, withGuild);
+  }
+  for (const thread of raw.threads ?? []) {
+    const withGuild: types.Channel = { ...thread, guild_id: raw.id };
+    ctx.cache.channels.set(thread.id, withGuild);
+  }
+  for (const role of raw.roles ?? []) ctx.cache.roles.set(role.id, role);
+  for (const member of raw.members ?? []) {
+    const userId = member.user?.id;
+    if (userId !== undefined) cacheMember(ctx, raw.id, userId, member);
+  }
+}
+
+function cacheMember(
+  ctx: StructureContext,
+  guildId: string,
+  userId: string,
+  raw: types.GuildMember,
+): void {
+  ctx.cache.members.set(memberCacheKey(guildId, userId), raw);
+  if (raw.user !== undefined) ctx.cache.users.set(raw.user.id, raw.user);
+}
+
+function clearGuildCaches(
+  ctx: StructureContext,
+  guildId: string,
+  guild: types.Guild | undefined,
+): void {
+  for (const [id, channel] of ctx.cache.channels.entries()) {
+    if (channel.guild_id === guildId) ctx.cache.channels.delete(id);
+  }
+  for (const [id, message] of ctx.cache.messages.entries()) {
+    if (message.guild_id === guildId) ctx.cache.messages.delete(id);
+  }
+  for (const key of ctx.cache.members.keys()) {
+    if (key.startsWith(`${guildId}:`)) ctx.cache.members.delete(key);
+  }
+  for (const role of guild?.roles ?? []) ctx.cache.roles.delete(role.id);
+}
+
+function updateGuildRoles(
+  ctx: StructureContext,
+  guildId: string,
+  update: (roles: types.Guild["roles"]) => types.Guild["roles"],
+): void {
+  const guild = ctx.cache.guilds.resolve(guildId);
+  if (guild !== undefined) ctx.cache.guilds.set(guildId, { ...guild, roles: update(guild.roles) });
+}
