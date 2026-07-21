@@ -4,6 +4,8 @@ apps/
 !.env.example
 coverage/
 dist/
+docs/.astro/
+docs/dist/
 *.tgz
 *.tsbuildinfo
 .DS_Store
