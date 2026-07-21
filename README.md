@@ -99,7 +99,7 @@ Do not loop over the bot's guild IDs. A separate publishing process can set
   extensions.
 - Raw gateway events for features that do not have a typed event yet.
 
-See the [coverage guide](docs/coverage.md) for the current release boundary.
+See [feature coverage](https://sillyfrogster.github.io/Eunia/reference/coverage/) for the current release boundary.
 
 ## Configuration
 
@@ -154,10 +154,11 @@ modular without requiring users to install several packages.
 
 ## Guides
 
-- [Commands](docs/commands.md)
-- [Caching](docs/cache.md)
-- [Modules](docs/modules.md)
-- [Coverage](docs/coverage.md)
+- [Getting started](https://sillyfrogster.github.io/Eunia/getting-started/)
+- [Commands](https://sillyfrogster.github.io/Eunia/guides/commands/)
+- [Caching](https://sillyfrogster.github.io/Eunia/guides/cache/)
+- [Modules](https://sillyfrogster.github.io/Eunia/guides/modules/)
+- [Feature coverage](https://sillyfrogster.github.io/Eunia/reference/coverage/)
 
 ## Work on Eunia
 
