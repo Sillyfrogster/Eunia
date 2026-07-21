@@ -1,0 +1,147 @@
+---
+title: Client
+description: Client setup, lifecycle, events, domains, modules, and services.
+---
+
+## Client
+
+```ts
+new Client(options: ClientOptions)
+```
+
+`Client` connects the gateway, REST client, cache, commands, structures, and modules.
+
+### ClientOptions
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `token` | `string` | Required bot token. |
+| `intents` | `number \| readonly number[]` | One bitfield or a list of intent values. |
+| `applicationId` | `string` | Optional known application ID. |
+| `botId` | `string` | Optional known bot user ID. |
+| `ownerIds` | `readonly string[]` | Used by owner-only commands. |
+| `rest` | `Omit<RestOptions, "token">` | REST settings. |
+| `gateway` | `ClientGatewayOptions` | Shards, presence, and large threshold. |
+| `cache` | `CacheOptions \| StructureCache` | Cache settings or an existing cache. |
+| `commands` | `ClientCommandOptions` | Commands and command manager settings. |
+| `modules` | `readonly EuniaModule[]` | Modules to load before connecting. |
+| `logger` | `Logger` | Logger shared by the client and its children. |
+
+`ClientGatewayOptions` accepts `shards`, `presence`, and `largeThreshold`. `ClientCommandOptions` adds `commands` and `publishOnStart` to `CommandManagerOptions`.
+
+### Properties
+
+| Property | Type | Purpose |
+| --- | --- | --- |
+| `state` | `ClientState` | `idle`, `starting`, `ready`, `stopping`, `stopped`, or `failed`. |
+| `isReady` | `boolean` | Whether startup completed. |
+| `applicationId` | `string \| undefined` | Configured or gateway-provided application ID. |
+| `botId` | `string \| undefined` | Configured or gateway-provided bot ID. |
+| `self` | `User \| undefined` | Cached bot user. |
+| `latencyMs` | `number \| null` | Average shard heartbeat latency. |
+| `latencies` | `ReadonlyMap<number, number \| null>` | Heartbeat latency by shard. |
+| `shardIds` | `readonly number[]` | Shards assigned to this process. |
+| `totalShards` | `number` | Total shard count. |
+| `readySessions` | `ReadonlyMap<number, Readonly<types.ReadyEvent>>` | READY payloads by shard. |
+| `rest` | `EuniaRest` | REST client. |
+| `cache` | `StructureCache` | Raw structure cache. |
+| `commands` | `CommandManager` | Command registry and dispatcher. |
+| `services` | `ServiceRegistry` | Services shared by modules. |
+
+### Lifecycle and gateway methods
+
+| Method | Returns |
+| --- | --- |
+| `use(module)` | `this` |
+| `start()` | `Promise<this>` |
+| `stop()` | `Promise<void>` |
+| `destroy()` | `Promise<void>` |
+| `updatePresence(presence)` | `Promise<void>` |
+| `requestGuildMembers(request)` | `Promise<void>` |
+
+Register modules before calling `start`. `destroy` is an alias for `stop`.
+
+## Resource domains
+
+The client exposes resource operations without requiring a structure instance.
+
+| Domain | Methods |
+| --- | --- |
+| `users` | `get(id)`, `peek(id)`, `pull(id)` |
+| `guilds` | `get(id)`, `peek(id)`, `pull(id)` |
+| `channels` | `get(id)`, `peek(id)`, `pull(id)`, `edit(id, input, audit?)`, `delete(id, audit?)`, `typing(id)` |
+| `messages` | `get(channelId, messageId)`, `peek(...)`, `pull(...)`, `send(channelId, input)`, `edit(...)`, `delete(...)` |
+| `members` | `get(guildId, userId)`, `peek(...)`, `pull(...)`, `edit(...)`, `kick(...)`, `ban(...)`, `unban(...)`, `addRole(...)`, `removeRole(...)` |
+| `roles` | `get(guildId, roleId)`, `peek(...)`, `pull(...)`, `list(guildId)`, `create(...)`, `edit(...)`, `delete(...)` |
+| `reactions` | `add(channelId, messageId, emoji)`, `remove(...)`, `clear(...)` |
+| `pins` | `add(channelId, messageId)`, `remove(channelId, messageId)` |
+
+## Events
+
+```ts
+client.on("messageCreate", (message) => {
+  console.log(message.content);
+});
+```
+
+| Event | Listener arguments |
+| --- | --- |
+| `ready` | `User` |
+| `stopped` | none |
+| `stateChange` | `state`, `previous` |
+| `userUpdate` | `user`, `previous?` |
+| `guildCreate` | `guild` |
+| `guildUpdate` | `guild`, `previous?` |
+| `guildDelete` | `GuildDeleteInfo` |
+| `channelCreate` | `channel` |
+| `channelUpdate` | `channel`, `previous?` |
+| `channelDelete` | `channel` |
+| `messageCreate` | `message` |
+| `messageUpdate` | `message`, `previous`, `raw` |
+| `messageDelete` | `MessageDeleteInfo` |
+| `messageDeleteBulk` | `MessageDeleteBulkInfo` |
+| `guildMemberAdd` | `member` |
+| `guildMemberUpdate` | `member`, `previous?` |
+| `guildMemberRemove` | `GuildMemberRemoveInfo` |
+| `roleCreate` | `role` |
+| `roleUpdate` | `role`, `previous?` |
+| `roleDelete` | `RoleDeleteInfo` |
+| `interactionCreate` | `interaction` |
+| `dispatch` | `eventName`, `data`, `shardId` |
+| `shardReconnecting` | `shardId`, `ReconnectInfo` |
+| `shardResumed` | `shardId` |
+| `shardClosed` | `shardId`, `CloseInfo` |
+| `commandResult` | `result`, `source` |
+| `commandError` | `error`, `context?` |
+| `clientError` | `error`, `source` |
+
+## Modules
+
+```ts
+interface EuniaModule {
+  readonly name: string;
+  readonly dependsOn?: readonly string[];
+  setup?(client: Client): void | Promise<void>;
+  start?(client: Client): void | Promise<void>;
+  stop?(client: Client): void | Promise<void>;
+}
+```
+
+`orderModules(modules)` validates names and dependencies, then returns dependency order.
+
+## ServiceRegistry
+
+| Method | Purpose |
+| --- | --- |
+| `provide(key, service)` | Register one value. Duplicate keys throw. |
+| `get<T>(key)` | Return a service or throw. |
+| `resolve<T>(key)` | Return a service or `undefined`. |
+| `has(key)` | Check a key. |
+| `delete(key)` | Remove a key. |
+| `clear()` | Remove all services. |
+
+Service keys are strings or symbols.
+
+## Other exports
+
+`resolveIntents`, `IntentInput`, `ClientState`, `ClientOptions`, `ClientGatewayOptions`, `ClientCommandOptions`, `EuniaModule`, `ServiceKey`, `GuildDeleteInfo`, `GuildMemberRemoveInfo`, `RoleDeleteInfo`, `MessageDeleteInfo`, and `MessageDeleteBulkInfo`.
