@@ -1,33 +1,77 @@
 :root {
+  --charcoal-100: #353535;
+  --charcoal-200: #2c2c2c;
+  --charcoal-300: #232323;
+  --charcoal-400: #1a1a1a;
+  --charcoal-500: #111111;
+  --charcoal-600: #090909;
+  --charcoal-700: #000000;
+  --indigo-100: #285c70;
+  --indigo-200: #255468;
+  --indigo-300: #224d5f;
+  --indigo-400: #1f4657;
+  --indigo-500: #1c3e4e;
+  --indigo-600: #193746;
+  --indigo-700: #16303d;
+  --steel-teal-100: #3f5a66;
+  --steel-teal-200: #486675;
+  --steel-teal-300: #517380;
+  --steel-teal-400: #58818d;
+  --steel-teal-500: #60899b;
+  --steel-teal-600: #6692a4;
+  --steel-teal-700: #6c9bad;
+  --grey-100: #757575;
+  --grey-200: #7e7e7e;
+  --grey-300: #808080;
+  --grey-400: #8c8c8c;
+  --grey-500: #989898;
+  --grey-600: #a1a1a1;
+  --grey-700: #aaaaaa;
+  --foggy-100: #9c9c8a;
+  --foggy-200: #aaa692;
+  --foggy-300: #b1af9a;
+  --foggy-400: #bbb89f;
+  --foggy-500: #c4c2aa;
+  --foggy-600: #cdcab2;
+  --foggy-700: #d6d3ba;
+  --star-dust-100: #cecac8;
+  --star-dust-200: #d8d3d1;
+  --star-dust-300: #e2ddda;
+  --star-dust-400: #e9e4e1;
+  --star-dust-500: #f2edea;
+  --star-dust-600: #f9f3f1;
+  --star-dust-700: #fffaf8;
   --sl-font: "Onest Variable", sans-serif;
   --sl-font-system-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --sl-color-accent-low: oklch(0.95 0.04 74.6);
-  --sl-color-accent: oklch(0.56 0.15 70);
-  --sl-color-accent-high: oklch(0.27 0.06 64);
-  --sl-color-white: oklch(0.17 0.015 65);
-  --sl-color-gray-1: oklch(0.25 0.012 65);
-  --sl-color-gray-2: oklch(0.37 0.012 65);
-  --sl-color-gray-3: oklch(0.52 0.01 65);
-  --sl-color-gray-4: oklch(0.72 0.008 65);
-  --sl-color-gray-5: oklch(0.9 0.005 65);
-  --sl-color-gray-6: oklch(0.965 0.003 65);
-  --sl-color-black: oklch(1 0 0);
+  --sl-color-accent-low: var(--star-dust-300);
+  --sl-color-accent: var(--indigo-100);
+  --sl-color-accent-high: var(--indigo-700);
+  --sl-color-white: var(--charcoal-500);
+  --sl-color-gray-1: var(--charcoal-100);
+  --sl-color-gray-2: var(--charcoal-100);
+  --sl-color-gray-3: var(--grey-100);
+  --sl-color-gray-4: var(--star-dust-100);
+  --sl-color-gray-5: var(--star-dust-300);
+  --sl-color-gray-6: var(--star-dust-500);
+  --sl-color-black: var(--star-dust-700);
   --sl-content-width: 48rem;
-  --sl-text-h1: clamp(2.35rem, 4vw, 3.7rem);
+  --sl-text-h1: clamp(2.25rem, 4vw, 3.25rem);
+  --sl-text-h2: clamp(1.65rem, 2.5vw, 2rem);
+  --sl-text-h3: clamp(1.25rem, 2vw, 1.45rem);
 }
 
 :root[data-theme="dark"] {
-  --sl-color-accent-low: oklch(0.27 0.055 70);
-  --sl-color-accent: oklch(0.76 0.13 77);
-  --sl-color-accent-high: oklch(0.94 0.035 77);
-  --sl-color-white: oklch(0.96 0.006 75);
-  --sl-color-gray-1: oklch(0.88 0.008 75);
-  --sl-color-gray-2: oklch(0.72 0.008 75);
-  --sl-color-gray-3: oklch(0.56 0.008 75);
-  --sl-color-gray-4: oklch(0.39 0.01 75);
-  --sl-color-gray-5: oklch(0.25 0.012 75);
-  --sl-color-gray-6: oklch(0.18 0.012 75);
-  --sl-color-black: oklch(0.115 0.008 75);
+  --sl-color-accent-low: var(--indigo-700);
+  --sl-color-accent: var(--steel-teal-700);
+  --sl-color-accent-high: var(--star-dust-500);
+  --sl-color-white: var(--star-dust-500);
+  --sl-color-gray-1: var(--star-dust-300);
+  --sl-color-gray-2: var(--star-dust-100);
+  --sl-color-gray-3: var(--grey-700);
+  --sl-color-gray-4: var(--grey-100);
+  --sl-color-gray-5: var(--charcoal-100);
+  --sl-color-gray-6: var(--charcoal-300);
+  --sl-color-black: var(--charcoal-500);
 }
 
 html {
@@ -35,7 +79,8 @@ html {
 }
 
 body {
-  letter-spacing: -0.008em;
+  letter-spacing: 0;
+  line-height: 1.65;
 }
 
 h1,
@@ -64,6 +109,38 @@ li {
 .sl-markdown-content a:not([class]) {
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.16em;
+}
+
+[data-has-hero] .hero {
+  padding-block: clamp(3rem, 7vw, 5rem) clamp(2rem, 4vw, 3rem);
+}
+
+[data-has-hero] .hero h1 {
+  max-width: 14ch;
+  font-size: var(--sl-text-h1);
+  line-height: 1.08;
+}
+
+[data-has-hero] .hero .tagline {
+  max-width: 40ch;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+[data-has-hero] .sl-link-button.primary {
+  border-color: var(--indigo-100);
+  background: var(--indigo-100);
+  color: var(--star-dust-700);
+}
+
+[data-has-hero] .sl-link-button.primary:hover,
+[data-has-hero] .sl-link-button.primary:focus-visible {
+  border-color: var(--indigo-200);
+  background: var(--indigo-200);
+}
+
+[data-has-hero] .sl-container {
+  max-width: 76rem;
 }
 
 .expressive-code {
