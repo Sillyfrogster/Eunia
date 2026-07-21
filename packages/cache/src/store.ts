@@ -216,6 +216,20 @@ export class CacheStore<T> {
     return this.hot.keys();
   }
 
+  async list(prefix = ""): Promise<readonly string[]> {
+    const keys = new Set([...this.hot.keys()].filter((key) => key.startsWith(prefix)));
+    if (this.adapter === undefined) return [...keys];
+
+    await this.flush();
+    try {
+      for (const key of await this.adapter.keys(this.namespace, prefix)) keys.add(key);
+      return [...keys];
+    } catch (error) {
+      await this.report(error, { operation: "keys" });
+      throw error;
+    }
+  }
+
   entries(): IterableIterator<[string, T]> {
     return this.hot.entries();
   }

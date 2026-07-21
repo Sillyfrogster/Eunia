@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Cache, type CacheOptions } from "@eunia/cache";
+import { Cache, type CacheAdapter, type CacheOptions } from "@eunia/cache";
 import { DiscordError, type EuniaRest, type RequestPath } from "@eunia/rest";
 import {
   ApplicationCommandType,
@@ -30,10 +30,12 @@ import {
   isInteraction,
   memberCacheKey,
   normalizeSendable,
+  purgeCachedGuildRelations,
   setCachedGuild,
   setCachedRole,
   snowflakeTimestamp,
   upsertCachedGuildMember,
+  upsertCachedGuildChannel,
   type StructureCacheShape,
   type StructureContext,
 } from "../src";
@@ -101,6 +103,43 @@ class FakeRest {
     const response = this.responses.shift();
     if (response instanceof Error) throw response;
     return (await response) as T;
+  }
+}
+
+class TestCacheAdapter implements CacheAdapter {
+  readonly data = new Map<string, Map<string, unknown>>();
+
+  async get(namespace: string, key: string): Promise<unknown | undefined> {
+    return this.data.get(namespace)?.get(key);
+  }
+
+  async set(namespace: string, key: string, value: unknown): Promise<void> {
+    this.namespace(namespace).set(key, value);
+  }
+
+  async delete(namespace: string, key: string): Promise<void> {
+    this.data.get(namespace)?.delete(key);
+  }
+
+  async keys(namespace: string, prefix = ""): Promise<string[]> {
+    return [...(this.data.get(namespace)?.keys() ?? [])].filter((key) =>
+      key.startsWith(prefix),
+    );
+  }
+
+  async clear(namespace: string): Promise<void> {
+    this.data.delete(namespace);
+  }
+
+  async close(): Promise<void> {}
+
+  private namespace(name: string): Map<string, unknown> {
+    let values = this.data.get(name);
+    if (values === undefined) {
+      values = new Map();
+      this.data.set(name, values);
+    }
+    return values;
   }
 }
 
@@ -600,6 +639,48 @@ describe("Guild, member, and role", () => {
 
     const structure = new Guild(guild({ channels: [] }), context);
     expect([...structure.channels.keys()]).toEqual([secondChannelId]);
+  });
+
+  test("purges remote guild relations after hot eviction", async () => {
+    const adapter = new TestCacheAdapter();
+    const { context } = makeContext({
+      adapter,
+      policies: {
+        channels: { maxSize: 1 },
+        members: { maxSize: 1 },
+        roles: { maxSize: 1 },
+      },
+    });
+    setCachedGuild(context, guild({
+      channels: [channel()],
+      members: [member()],
+      roles: [role()],
+    }));
+    await context.cache.flush();
+
+    upsertCachedGuildChannel(context, channel({
+      id: THREAD_ID,
+      guild_id: SECOND_GUILD_ID,
+    }));
+    upsertCachedGuildMember(
+      context,
+      SECOND_GUILD_ID,
+      SECOND_USER_ID,
+      member({ user: user({ id: SECOND_USER_ID }) }),
+    );
+    setCachedRole(context, SECOND_GUILD_ID, role({ id: SECOND_USER_ID }));
+    await context.cache.flush();
+
+    expect(context.cache.channels.resolve(CHANNEL_ID)).toBeUndefined();
+    expect(context.cache.members.resolve(memberCacheKey(GUILD_ID, USER_ID))).toBeUndefined();
+    expect(context.cache.roles.resolve(ROLE_ID)).toBeUndefined();
+
+    await purgeCachedGuildRelations(context, GUILD_ID);
+
+    expect(await adapter.get("channels", CHANNEL_ID)).toBeUndefined();
+    expect(await adapter.get("members", memberCacheKey(GUILD_ID, USER_ID))).toBeUndefined();
+    expect(await adapter.get("roles", ROLE_ID)).toBeUndefined();
+    expect(await adapter.keys("guild-relations", `${GUILD_ID}:`)).toEqual([]);
   });
 
   test("calculates role permissions and runs common moderation methods", async () => {

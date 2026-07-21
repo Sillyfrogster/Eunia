@@ -75,7 +75,7 @@ REST.
 
 ## Custom adapter
 
-Implement five operations to use another system. This example adapts an
+Implement six operations to use another system. This example adapts an
 existing key-value backend:
 
 ```ts
@@ -85,6 +85,7 @@ interface KeyValueBackend {
   get(key: string): Promise<unknown | undefined>;
   set(key: string, value: unknown, ttl?: number): Promise<void>;
   delete(key: string): Promise<void>;
+  keys(prefix: string): Promise<string[]>;
   deletePrefix(prefix: string): Promise<void>;
   close(): Promise<void>;
 }
@@ -102,6 +103,14 @@ class MyCacheAdapter implements CacheAdapter {
 
   delete(namespace: string, key: string): Promise<void> {
     return this.backend.delete(this.key(namespace, key));
+  }
+
+  async keys(namespace: string, prefix = ""): Promise<string[]> {
+    const namespacePrefix = this.prefix(namespace);
+    const keys = await this.backend.keys(
+      `${namespacePrefix}${encodeURIComponent(prefix)}`,
+    );
+    return keys.map((key) => decodeURIComponent(key.slice(namespacePrefix.length)));
   }
 
   clear(namespace: string): Promise<void> {
@@ -123,7 +132,8 @@ class MyCacheAdapter implements CacheAdapter {
 ```
 
 Pass an instance as `cache.adapter`. Namespace and key are separate so the
-adapter can isolate built-in and third-party data.
+adapter can isolate built-in and third-party data. `keys()` returns logical
+domain keys without the backend's namespace prefix.
 
 Background write failures go to the `CacheOptions.onError` callback. The client
 supplies a logger when no handler is set. Failed remote writes do not roll back

@@ -39,6 +39,12 @@ class FakeAdapter implements CacheAdapter {
     this.data.get(namespace)?.delete(key);
   }
 
+  async keys(namespace: string, prefix = ""): Promise<string[]> {
+    return [...(this.data.get(namespace)?.keys() ?? [])].filter((key) =>
+      key.startsWith(prefix),
+    );
+  }
+
   async clear(namespace: string): Promise<void> {
     this.calls.push(`clear:${namespace}`);
     this.data.delete(namespace);
@@ -525,6 +531,20 @@ describe("CacheStore", () => {
     expect(await read).toBeUndefined();
     expect(store.resolve("1")).toBeUndefined();
   });
+
+  test("lists hot and remote keys by prefix", async () => {
+    const adapter = new FakeAdapter();
+    adapter.seed("members", "1:remote", {});
+    adapter.seed("members", "2:other", {});
+    const store = new CacheStore({
+      namespace: "members",
+      adapter,
+      policy: { maxSize: 2 },
+    });
+    store.set("1:hot", {});
+
+    expect(await store.list("1:")).toEqual(["1:hot", "1:remote"]);
+  });
 });
 
 describe("Cache", () => {
@@ -709,6 +729,16 @@ describe("RedisCacheAdapter", () => {
     expect(client.scanPatterns).toHaveLength(1);
     expect(await adapter.get("users", "1")).toBeUndefined();
     expect(await adapter.get("guilds", "1")).toEqual({ id: "1" });
+  });
+
+  test("lists decoded keys by prefix", async () => {
+    const client = new FakeRedisClient();
+    const adapter = new RedisCacheAdapter({ client });
+    await adapter.set("members", "1:one", {});
+    await adapter.set("members", "1:two", {});
+    await adapter.set("members", "2:other", {});
+
+    expect(await adapter.keys("members", "1:")).toEqual(["1:one", "1:two"]);
   });
 
   test("deletes each scan page before requesting the next one", async () => {

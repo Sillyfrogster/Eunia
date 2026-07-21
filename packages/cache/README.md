@@ -118,7 +118,8 @@ await cache.close();
 
 Pass any object that implements `CacheAdapter` to use another cache system. The
 adapter receives the domain separately from the key, so it must keep
-namespaces isolated.
+namespaces isolated. Its `keys()` method returns logical domain keys without
+the backend's namespace prefix.
 
 `ttl` controls values written through `set()`, both in memory and in the
 adapter. `readThroughTtl` only controls the in-memory copy loaded from an

@@ -504,7 +504,12 @@ export class Client extends EventEmitter {
   private wireGateway(gateway: ShardManager): void {
     gateway.on("dispatch", (shardId, eventName, data) => {
       try {
-        routeDispatch(this, this.context, eventName, data, shardId);
+        const handled = routeDispatch(this, this.context, eventName, data, shardId);
+        if (handled !== undefined) {
+          void handled.catch((error) => {
+            this.reportClientError(error, `gateway event ${eventName}`);
+          });
+        }
       } catch (error) {
         this.reportClientError(error, `gateway event ${eventName}`);
       }

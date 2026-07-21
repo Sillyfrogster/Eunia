@@ -14,7 +14,11 @@ import {
   MessageFlags,
 } from "@eunia/types";
 import type * as types from "@eunia/types";
-import { setCachedGuild, type StructureContext } from "../context";
+import {
+  setCachedGuild,
+  upsertCachedGuildChannel,
+  type StructureContext,
+} from "../context";
 import {
   normalizeSendable,
   splitMessageFiles,
@@ -346,7 +350,7 @@ class InteractionImpl {
     const raw = await this.ctx.rest.get<types.Channel>(
       routePath("/channels/{channelId}", { channelId }),
     );
-    this.ctx.cache.channels.set(raw.id, raw);
+    upsertCachedGuildChannel(this.ctx, raw);
     return new Channel(raw, this.ctx);
   }
 

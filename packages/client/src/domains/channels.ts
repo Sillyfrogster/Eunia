@@ -24,6 +24,13 @@ export class ChannelsDomain extends CachedDomain<types.Channel, Channel> {
     return new Channel(raw, this.ctx);
   }
 
+  override async pull(id: string): Promise<Channel> {
+    requireId(id);
+    const raw = await this.ctx.rest.get<types.Channel>(this.route(id));
+    upsertCachedGuildChannel(this.ctx, raw);
+    return this.hydrate(raw);
+  }
+
   async edit(
     channelId: string,
     input: ChannelEditInput,

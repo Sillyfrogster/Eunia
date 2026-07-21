@@ -68,6 +68,31 @@ export class RedisCacheAdapter implements CacheAdapter {
     await this.client.del(this.key(namespace, key));
   }
 
+  async keys(namespace: string, prefix = ""): Promise<string[]> {
+    const namespacePrefix = this.namespacePrefix(namespace);
+    const pattern = `${namespacePrefix}${encodeKey(prefix)}*`;
+    const keys: string[] = [];
+    let cursor = "0";
+
+    do {
+      const [nextCursor, page] = await this.client.scan(
+        cursor,
+        "MATCH",
+        pattern,
+        "COUNT",
+        SCAN_COUNT,
+      );
+      cursor = nextCursor;
+      for (const key of page) {
+        const encoded = key.slice(namespacePrefix.length);
+        const decoded = decodeKey(encoded);
+        if (decoded !== undefined) keys.push(decoded);
+      }
+    } while (cursor !== "0");
+
+    return keys;
+  }
+
   async clear(namespace: string): Promise<void> {
     const pattern = `${this.namespacePrefix(namespace)}*`;
     let cursor = "0";
@@ -93,7 +118,7 @@ export class RedisCacheAdapter implements CacheAdapter {
   }
 
   private key(namespace: string, key: string): string {
-    return `${this.namespacePrefix(namespace)}${encodePart(key)}`;
+    return `${this.namespacePrefix(namespace)}${encodeKey(key)}`;
   }
 
   private namespacePrefix(namespace: string): string {
@@ -118,4 +143,22 @@ function encodePart(value: string): string {
   let encoded = `${bytes.length.toString(36)}-`;
   for (const byte of bytes) encoded += byte.toString(16).padStart(2, "0");
   return encoded;
+}
+
+function encodeKey(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let encoded = "k";
+  for (const byte of bytes) encoded += byte.toString(16).padStart(2, "0");
+  return encoded;
+}
+
+function decodeKey(value: string): string | undefined {
+  if (!value.startsWith("k") || value.length % 2 !== 1) return undefined;
+  const bytes = new Uint8Array((value.length - 1) / 2);
+  for (let index = 1; index < value.length; index += 2) {
+    const byte = Number.parseInt(value.slice(index, index + 2), 16);
+    if (!Number.isFinite(byte)) return undefined;
+    bytes[(index - 1) / 2] = byte;
+  }
+  return new TextDecoder().decode(bytes);
 }

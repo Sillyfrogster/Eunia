@@ -3,11 +3,10 @@ import {
   Guild,
   GuildMember,
   Role,
-  cachedGuildChannelIds,
-  cachedGuildMemberIds,
-  cachedGuildRoleIds,
   memberCacheKey,
+  purgeCachedGuildRelations,
   removeCachedGuildMember,
+  removeCachedRole,
   resolveCachedRole,
   setCachedGuild,
   setCachedRole,
@@ -40,17 +39,19 @@ export const guildHandlers: DispatchHandlerMap = {
     const event = data as types.GuildDeleteEvent;
     const previousRaw = ctx.cache.guilds.resolve(event.id);
     const unavailable = event.unavailable === true;
+    let purge: Promise<void> | undefined;
     if (unavailable && previousRaw !== undefined) {
       ctx.cache.guilds.set(event.id, { ...previousRaw, unavailable: true });
     } else {
       ctx.cache.guilds.delete(event.id);
-      clearGuildCaches(ctx, event.id);
+      purge = purgeCachedGuildRelations(ctx, event.id);
     }
     client.emit("guildDelete", {
       id: event.id,
       unavailable,
       ...(previousRaw === undefined ? {} : { guild: new Guild(previousRaw, ctx) }),
     });
+    return purge;
   },
 
   GUILD_MEMBER_ADD(client, ctx, data) {
@@ -136,7 +137,7 @@ export const guildHandlers: DispatchHandlerMap = {
   GUILD_ROLE_DELETE(client, ctx, data) {
     const event = data as types.GuildRoleDeleteEvent;
     const previous = resolveCachedRole(ctx, event.guild_id, event.role_id);
-    ctx.cache.roles.delete(event.role_id);
+    removeCachedRole(ctx, event.guild_id, event.role_id);
     client.emit("roleDelete", {
       guildId: event.guild_id,
       roleId: event.role_id,
@@ -144,17 +145,3 @@ export const guildHandlers: DispatchHandlerMap = {
     });
   },
 };
-
-function clearGuildCaches(
-  ctx: StructureContext,
-  guildId: string,
-): void {
-  for (const id of cachedGuildChannelIds(ctx, guildId)) ctx.cache.channels.delete(id);
-  for (const [id, message] of ctx.cache.messages.entries()) {
-    if (message.guild_id === guildId) ctx.cache.messages.delete(id);
-  }
-  for (const userId of cachedGuildMemberIds(ctx, guildId)) {
-    ctx.cache.members.delete(memberCacheKey(guildId, userId));
-  }
-  for (const roleId of cachedGuildRoleIds(ctx, guildId)) ctx.cache.roles.delete(roleId);
-}

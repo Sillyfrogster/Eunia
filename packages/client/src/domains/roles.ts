@@ -3,6 +3,7 @@ import { toPermissionBits } from "@eunia/types";
 import {
   Role,
   getCachedRole,
+  removeCachedRole,
   resolveCachedRole,
   setCachedRole,
   type AuditLogOptions,
@@ -94,7 +95,7 @@ export class RolesDomain {
       routePath("/guilds/{guildId}/roles/{roleId}", { guildId, roleId }),
       audit.reason === undefined ? {} : { reason: audit.reason },
     );
-    this.ctx.cache.roles.delete(roleId);
+    removeCachedRole(this.ctx, guildId, roleId);
   }
 }
 

@@ -7,6 +7,7 @@ export interface CacheAdapter {
     ttl?: number,
   ): Promise<void>;
   delete(namespace: string, key: string): Promise<void>;
+  keys(namespace: string, prefix?: string): Promise<string[]>;
   clear(namespace: string): Promise<void>;
   close(): Promise<void>;
 }
@@ -15,6 +16,7 @@ export type CacheAdapterOperation =
   | "get"
   | "set"
   | "delete"
+  | "keys"
   | "clear"
   | "close";
 

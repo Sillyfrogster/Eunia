@@ -1,5 +1,5 @@
 import type * as types from "@eunia/types";
-import { createInteraction, memberCacheKey } from "@eunia/structures";
+import { createInteraction, upsertCachedGuildMember } from "@eunia/structures";
 import type { DispatchHandlerMap } from "./types";
 
 export const interactionHandlers: DispatchHandlerMap = {
@@ -8,7 +8,7 @@ export const interactionHandlers: DispatchHandlerMap = {
     const user = raw.member?.user ?? raw.user;
     if (user !== undefined) ctx.cache.users.set(user.id, user);
     if (raw.guild_id !== undefined && raw.member !== undefined && user !== undefined) {
-      ctx.cache.members.set(memberCacheKey(raw.guild_id, user.id), raw.member);
+      upsertCachedGuildMember(ctx, raw.guild_id, user.id, raw.member);
     }
 
     const interaction = createInteraction(raw, ctx);

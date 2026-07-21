@@ -21,6 +21,6 @@ export function routeDispatch(
   eventName: string,
   data: unknown,
   shardId = 0,
-): void {
-  handlers[eventName]?.(client, ctx, data, shardId);
+): void | Promise<void> {
+  return handlers[eventName]?.(client, ctx, data, shardId);
 }

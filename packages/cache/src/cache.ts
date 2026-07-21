@@ -103,6 +103,10 @@ export class Cache<S extends CacheShape = CacheShape> {
     return this.createDomain<T>(name, policy ?? { maxSize: 1_000 });
   }
 
+  get hasRemoteAdapter(): boolean {
+    return this.adapter !== undefined;
+  }
+
   async flush(): Promise<void> {
     await Promise.all([...this.domains.values()].map((store) => store.flush()));
   }

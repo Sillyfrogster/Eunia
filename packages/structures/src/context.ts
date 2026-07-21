@@ -24,6 +24,9 @@ export interface StructureContext {
 }
 
 const relationIndexes = new WeakMap<StructureCache, GuildRelationIndex>();
+const GUILD_RELATION_MARKERS = "guild-relations";
+
+type CachedGuildRelation = "channel" | "member" | "role";
 
 export function memberCacheKey(guildId: string, userId: string): string {
   return `${guildId}:${userId}`;
@@ -36,6 +39,7 @@ export function setCachedRole(
 ): void {
   relationIndex(ctx);
   ctx.cache.roles.set(raw.id, { guildId, raw });
+  trackGuildRelation(ctx, guildId, "role", raw.id);
 }
 
 export function resolveCachedRole(
@@ -72,19 +76,20 @@ export function setCachedGuild(ctx: StructureContext, raw: types.Guild): void {
   });
 
   for (const channel of channels) {
-    ctx.cache.channels.set(channel.id, { ...channel, guild_id: raw.id });
+    upsertCachedGuildChannel(ctx, { ...channel, guild_id: raw.id });
   }
   for (const thread of threads) {
-    ctx.cache.channels.set(thread.id, { ...thread, guild_id: raw.id });
+    upsertCachedGuildChannel(ctx, { ...thread, guild_id: raw.id });
   }
   for (const role of roles) setCachedRole(ctx, raw.id, role);
-  for (const member of members) {
-    const user = member.user;
-    if (user === undefined) continue;
-    const userId = user.id;
-    ctx.cache.members.set(memberCacheKey(raw.id, userId), member);
-    ctx.cache.users.set(userId, user);
-  }
+  upsertCachedGuildMembers(
+    ctx,
+    raw.id,
+    members.flatMap((member) => {
+      const userId = member.user?.id;
+      return userId === undefined ? [] : [{ userId, raw: member }];
+    }),
+  );
 }
 
 export function upsertCachedGuildChannel(
@@ -93,15 +98,21 @@ export function upsertCachedGuildChannel(
 ): void {
   relationIndex(ctx);
   ctx.cache.channels.set(raw.id, raw);
+  if (raw.guild_id !== undefined) {
+    trackGuildRelation(ctx, raw.guild_id, "channel", raw.id);
+  }
 }
 
 export function removeCachedGuildChannel(
   ctx: StructureContext,
-  _guildId: string | undefined,
+  guildId: string | undefined,
   channelId: string,
 ): void {
   relationIndex(ctx);
   ctx.cache.channels.delete(channelId);
+  if (guildId !== undefined) {
+    untrackGuildRelation(ctx, guildId, "channel", channelId);
+  }
 }
 
 export function upsertCachedGuildMembers(
@@ -113,6 +124,7 @@ export function upsertCachedGuildMembers(
   for (const { userId, raw } of entries) {
     ctx.cache.members.set(memberCacheKey(guildId, userId), raw);
     if (raw.user !== undefined) ctx.cache.users.set(raw.user.id, raw.user);
+    trackGuildRelation(ctx, guildId, "member", userId);
   }
 }
 
@@ -132,6 +144,57 @@ export function removeCachedGuildMember(
 ): void {
   relationIndex(ctx);
   ctx.cache.members.delete(memberCacheKey(guildId, userId));
+  untrackGuildRelation(ctx, guildId, "member", userId);
+}
+
+export function removeCachedRole(
+  ctx: StructureContext,
+  guildId: string,
+  roleId: string,
+): void {
+  relationIndex(ctx);
+  ctx.cache.roles.delete(roleId);
+  untrackGuildRelation(ctx, guildId, "role", roleId);
+}
+
+export async function purgeCachedGuildRelations(
+  ctx: StructureContext,
+  guildId: string,
+): Promise<void> {
+  const channels = new Set(cachedGuildChannelIds(ctx, guildId));
+  const members = new Set(cachedGuildMemberIds(ctx, guildId));
+  const roles = new Set(cachedGuildRoleIds(ctx, guildId));
+
+  for (const id of channels) ctx.cache.channels.delete(id);
+  for (const userId of members) {
+    ctx.cache.members.delete(memberCacheKey(guildId, userId));
+  }
+  for (const id of roles) ctx.cache.roles.delete(id);
+  for (const [id, message] of ctx.cache.messages.entries()) {
+    if (message.guild_id === guildId) ctx.cache.messages.delete(id);
+  }
+  if (!ctx.cache.hasRemoteAdapter) return;
+
+  const markerStore = relationMarkerStore(ctx);
+  const markers = await markerStore.list(`${guildId}:`);
+  for (const marker of markers) {
+    const relation = parseGuildRelationMarker(marker, guildId);
+    if (relation === undefined) continue;
+    if (relation.kind === "channel") ctx.cache.channels.delete(relation.id);
+    else if (relation.kind === "member") {
+      ctx.cache.members.delete(memberCacheKey(guildId, relation.id));
+    } else {
+      ctx.cache.roles.delete(relation.id);
+    }
+    markerStore.delete(marker);
+  }
+  await Promise.all([
+    ctx.cache.channels.flush(),
+    ctx.cache.members.flush(),
+    ctx.cache.roles.flush(),
+    ctx.cache.messages.flush(),
+    markerStore.flush(),
+  ]);
 }
 
 export function cachedGuildChannelIds(
@@ -271,4 +334,53 @@ function relationIndex(ctx: StructureContext): GuildRelationIndex {
 function guildIdFromMemberKey(key: string): string | undefined {
   const separator = key.indexOf(":");
   return separator === -1 ? undefined : key.slice(0, separator);
+}
+
+function trackGuildRelation(
+  ctx: StructureContext,
+  guildId: string,
+  kind: CachedGuildRelation,
+  id: string,
+): void {
+  if (!ctx.cache.hasRemoteAdapter) return;
+  relationMarkerStore(ctx).set(guildRelationMarker(guildId, kind, id), true);
+}
+
+function untrackGuildRelation(
+  ctx: StructureContext,
+  guildId: string,
+  kind: CachedGuildRelation,
+  id: string,
+): void {
+  if (!ctx.cache.hasRemoteAdapter) return;
+  relationMarkerStore(ctx).delete(guildRelationMarker(guildId, kind, id));
+}
+
+function relationMarkerStore(ctx: StructureContext) {
+  return ctx.cache.domain<boolean>(GUILD_RELATION_MARKERS, { maxSize: 10_000 });
+}
+
+function guildRelationMarker(
+  guildId: string,
+  kind: CachedGuildRelation,
+  id: string,
+): string {
+  return `${guildId}:${kind}:${id}`;
+}
+
+function parseGuildRelationMarker(
+  marker: string,
+  guildId: string,
+): { kind: CachedGuildRelation; id: string } | undefined {
+  const prefix = `${guildId}:`;
+  if (!marker.startsWith(prefix)) return undefined;
+  const [kind, id, extra] = marker.slice(prefix.length).split(":");
+  if (
+    extra !== undefined ||
+    id === undefined ||
+    (kind !== "channel" && kind !== "member" && kind !== "role")
+  ) {
+    return undefined;
+  }
+  return { kind, id };
 }

@@ -6,6 +6,6 @@ export type DispatchHandler = (
   ctx: StructureContext,
   data: unknown,
   shardId: number,
-) => void;
+) => void | Promise<void>;
 
 export type DispatchHandlerMap = Readonly<Record<string, DispatchHandler>>;
