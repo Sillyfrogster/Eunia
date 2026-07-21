@@ -9,13 +9,16 @@ export default defineConfig({
       title: "Eunia",
       description: "A typed Discord library built for Bun.",
       logo: {
-        src: "./src/assets/eunia.svg",
+        src: "./src/assets/eunia-mark.png",
       },
-      favicon: "/favicon.svg",
+      favicon: "/favicon.png",
       customCss: [
         "@fontsource-variable/onest",
         "./src/styles/global.css",
       ],
+      components: {
+        Hero: "./src/components/Hero.astro",
+      },
       social: [
         {
           icon: "github",

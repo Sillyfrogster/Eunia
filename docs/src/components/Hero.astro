@@ -1,0 +1,9 @@
+---
+import DefaultHero from "@astrojs/starlight/components/Hero.astro";
+
+const pathname = Astro.url.pathname.replace(/\/$/, "");
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const isHome = pathname === "" || pathname === basePath;
+---
+
+{!isHome && <DefaultHero />}

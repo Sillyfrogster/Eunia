@@ -111,34 +111,6 @@ li {
   text-underline-offset: 0.16em;
 }
 
-[data-has-hero] .hero {
-  padding-block: clamp(3rem, 7vw, 5rem) clamp(2rem, 4vw, 3rem);
-}
-
-[data-has-hero] .hero h1 {
-  max-width: 14ch;
-  font-size: var(--sl-text-h1);
-  line-height: 1.08;
-}
-
-[data-has-hero] .hero .tagline {
-  max-width: 40ch;
-  font-size: 1.125rem;
-  line-height: 1.6;
-}
-
-[data-has-hero] .sl-link-button.primary {
-  border-color: var(--indigo-100);
-  background: var(--indigo-100);
-  color: var(--star-dust-700);
-}
-
-[data-has-hero] .sl-link-button.primary:hover,
-[data-has-hero] .sl-link-button.primary:focus-visible {
-  border-color: var(--indigo-200);
-  background: var(--indigo-200);
-}
-
 [data-has-hero] .sl-container {
   max-width: 76rem;
 }
