@@ -42,6 +42,7 @@
     "docs:build": "astro build --root docs",
     "docs:dev": "astro dev --root docs",
     "docs:preview": "astro preview --root docs",
+    "examples:check": "tsc -p apps/slash-commands/tsconfig.json && tsc -p apps/component-listeners/tsconfig.json",
     "prepack": "bun run build",
     "test": "bun test --parallel=1",
     "typecheck": "tsc --noEmit"

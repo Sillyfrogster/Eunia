@@ -1,0 +1,11 @@
+{
+  "name": "eunia-component-listeners-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@sillyfrogster/eunia": "alpha"
+  }
+}
