@@ -39,6 +39,7 @@ import {
 const USER_ID = "175928847299117063";
 const SECOND_USER_ID = "175928847299117064";
 const CHANNEL_ID = "123456789012345678";
+const THREAD_ID = "123456789012345679";
 const GUILD_ID = "987654321098765432";
 const SECOND_GUILD_ID = "987654321098765433";
 const MESSAGE_ID = "111111111111111111";
@@ -625,6 +626,38 @@ describe("Guild, member, and role", () => {
     expect(can(guildChannel.permissionsFor(structure), PermissionFlags.SendMessages)).toBe(
       false,
     );
+  });
+
+  test("requires a thread parent to calculate permissions", () => {
+    const { context } = makeContext();
+    context.cache.guilds.set(GUILD_ID, guild({ owner_id: SECOND_USER_ID }));
+    setCachedRole(context, GUILD_ID, role());
+    const structure = new GuildMember(member(), context, GUILD_ID, USER_ID);
+    const parent = channel({
+      permission_overwrites: [
+        {
+          id: GUILD_ID,
+          type: OverwriteType.Role,
+          allow: "0",
+          deny: PermissionFlags.SendMessages.toString() as `${bigint}`,
+        },
+      ],
+    });
+    const thread = new Channel(
+      channel({
+        id: THREAD_ID,
+        type: ChannelType.PublicThread,
+        parent_id: CHANNEL_ID,
+        permission_overwrites: [],
+      }),
+      context,
+    );
+
+    expect(() => thread.permissionsFor(structure)).toThrow(/parent channel/);
+
+    context.cache.channels.set(CHANNEL_ID, parent);
+
+    expect(can(thread.permissionsFor(structure), PermissionFlags.SendMessages)).toBe(false);
   });
 
   test("normalizes role permission edits and removes deleted roles", async () => {

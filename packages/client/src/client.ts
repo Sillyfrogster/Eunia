@@ -542,6 +542,17 @@ export class Client extends EventEmitter {
     ]);
     if (guild === undefined || channel === undefined) return {};
 
+    const permissionChannel = channel.isThread
+      ? await this.loadPermissionResource("parent channel", async () => {
+          const parentId = channel.raw.parent_id;
+          if (parentId === undefined || parentId === null) {
+            throw new Error("Thread permissions need a parent channel.");
+          }
+          return this.channels.get(parentId);
+        })
+      : channel;
+    if (permissionChannel === undefined) return {};
+
     const userMember = source.raw.member === undefined
       ? undefined
       : new GuildMember(
@@ -552,7 +563,7 @@ export class Client extends EventEmitter {
         );
     const userPermissions = userMember === undefined
       ? undefined
-      : channel.permissionsFor(userMember);
+      : permissionChannel.permissionsFor(userMember);
 
     const botId = this.botIdValue;
     const cachedBot = botId === undefined ? undefined : this.members.peek(guildId, botId);
@@ -565,7 +576,7 @@ export class Client extends EventEmitter {
           ));
     const botPermissions = botMember === undefined
       ? undefined
-      : channel.permissionsFor(botMember);
+      : permissionChannel.permissionsFor(botMember);
     return {
       ...(userPermissions === undefined ? {} : { userPermissions }),
       ...(botPermissions === undefined ? {} : { botPermissions }),

@@ -90,9 +90,16 @@ export class Channel extends BaseStructure<types.Channel> {
       throw new Error("Channel permissions need a member from the same guild.");
     }
 
-    if (this.isThread && this.raw.parent_id !== undefined && this.raw.parent_id !== null) {
-      const parent = this.ctx.cache.channels.resolve(this.raw.parent_id);
-      if (parent !== undefined) return new Channel(parent, this.ctx).permissionsFor(member);
+    if (this.isThread) {
+      const parentId = this.raw.parent_id;
+      if (parentId === undefined || parentId === null) {
+        throw new Error("Thread permissions need a parent channel.");
+      }
+      const parent = this.ctx.cache.channels.resolve(parentId);
+      if (parent === undefined) {
+        throw new Error(`Thread permissions need parent channel ${parentId} in cache.`);
+      }
+      return new Channel(parent, this.ctx).permissionsFor(member);
     }
 
     let permissions = member.guildPermissions;
