@@ -31,11 +31,11 @@ import {
 } from "@sillyfrogster/eunia";
 
 const token = process.env["DISCORD_TOKEN"]?.trim();
-const guildId = process.env["DISCORD_GUILD_ID"]?.trim();
+const developmentGuildId = process.env["DISCORD_GUILD_ID"]?.trim();
 if (!token || token === "paste-your-token-here") {
   throw new Error("Set DISCORD_TOKEN before starting Eunia.");
 }
-if (!guildId || !/^\d{17,20}$/.test(guildId)) {
+if (!developmentGuildId || !/^\d{17,20}$/.test(developmentGuildId)) {
   throw new Error("Set DISCORD_GUILD_ID to a development guild ID.");
 }
 
@@ -57,7 +57,7 @@ const client = new Client({
     commands: [new PingCommand()],
     publishOnStart: {
       scope: "guild",
-      guildId,
+      guildId: developmentGuildId,
     },
   },
 });
@@ -69,10 +69,17 @@ client.on("ready", (user) => {
 await client.start();
 ```
 
-`publishOnStart` uses Discord's bulk overwrite route and replaces every command
-in the target guild. Use it for a development guild. For production, call
-`client.commands.publish()` as part of a release step so restarts do not
-publish the same commands again. A separate publishing process can set
+`publishOnStart` replaces every command in the development guild. Guild
+commands update immediately, which makes them useful while you work.
+
+Publish once to the global scope when the commands are ready for every server:
+
+```ts
+await client.commands.publish({ scope: "global" });
+```
+
+Run global publishing as a release step instead of publishing on every restart.
+Do not loop over the bot's guild IDs. A separate publishing process can set
 `applicationId` in `ClientOptions` and publish without connecting the gateway.
 
 ## What is included

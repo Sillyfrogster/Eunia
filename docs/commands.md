@@ -72,7 +72,9 @@ await client.commands.publish({ scope: "global" });
 ```
 
 Publishing uses a bulk overwrite. The published list becomes the complete
-command list for that scope.
+command list for that scope. Global publishing covers every server that has
+the application, so do not loop over guild IDs. Guild publishing is for a
+development server or a command that is intentionally limited to one server.
 
 ## Groups and subcommands
 

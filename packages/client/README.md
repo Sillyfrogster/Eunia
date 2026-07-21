@@ -11,9 +11,8 @@ bun add @sillyfrogster/eunia@alpha
 import { Client, Command, Intents, type CommandContext } from "@sillyfrogster/eunia";
 
 const token = process.env["DISCORD_TOKEN"]?.trim();
-const guildId = process.env["DISCORD_GUILD_ID"]?.trim();
-if (!token || !guildId || !/^\d{17,20}$/.test(guildId)) {
-  throw new Error("Set DISCORD_TOKEN and a valid DISCORD_GUILD_ID.");
+if (!token) {
+  throw new Error("Set DISCORD_TOKEN.");
 }
 
 class Ping extends Command {
@@ -33,8 +32,10 @@ const client = new Client({
 });
 
 await client.start();
-await client.commands.publish({ scope: "guild", guildId });
 ```
+
+See the command guide for development and production publishing. A production
+bot publishes commands globally once instead of publishing to every guild.
 
 Each domain on the client exposes three cache accessors and its REST verbs.
 `get` reads the cache first and fetches on a miss, `peek` reads the cache

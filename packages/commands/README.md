@@ -90,12 +90,20 @@ trees Discord cannot register, and every child must share one kind.
 
 `publish()` uses Discord's bulk overwrite endpoint. It replaces every
 application command in the selected global or guild scope; prefix-only
-commands are never published. Pass an explicit guild target while developing:
+commands are never published. Use one development guild for quick testing:
 
 ```ts
-declare const guildId: string;
-await commands.publish({ scope: "guild", guildId });
+declare const developmentGuildId: string;
+await commands.publish({ scope: "guild", guildId: developmentGuildId });
 ```
+
+Publish once to the global scope when the commands are ready for every server:
+
+```ts
+await commands.publish({ scope: "global" });
+```
+
+Do not publish separately to every guild.
 
 ## Running commands
 
