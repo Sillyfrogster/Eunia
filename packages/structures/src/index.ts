@@ -43,6 +43,7 @@ export {
   removeCachedGuildChannel,
   removeCachedGuildMember,
   resolveCachedRole,
+  setCachedGuild,
   setCachedRole,
   upsertCachedGuildChannel,
   upsertCachedGuildMember,

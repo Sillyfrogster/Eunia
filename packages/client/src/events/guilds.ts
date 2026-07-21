@@ -6,6 +6,7 @@ import {
   memberCacheKey,
   removeCachedGuildMember,
   resolveCachedRole,
+  setCachedGuild,
   setCachedRole,
   upsertCachedGuildMember,
   upsertCachedGuildMembers,
@@ -16,7 +17,7 @@ import type { DispatchHandlerMap } from "./types";
 export const guildHandlers: DispatchHandlerMap = {
   GUILD_CREATE(client, ctx, data) {
     const raw = data as types.Guild;
-    cacheGuild(ctx, raw);
+    setCachedGuild(ctx, raw);
     client.emit("guildCreate", new Guild(raw, ctx));
   },
 
@@ -24,7 +25,7 @@ export const guildHandlers: DispatchHandlerMap = {
     const patch = data as types.Guild;
     const previousRaw = ctx.cache.guilds.resolve(patch.id);
     const raw = previousRaw === undefined ? patch : { ...previousRaw, ...patch };
-    cacheGuild(ctx, raw);
+    setCachedGuild(ctx, raw);
     client.emit(
       "guildUpdate",
       new Guild(raw, ctx),
@@ -115,7 +116,6 @@ export const guildHandlers: DispatchHandlerMap = {
   GUILD_ROLE_CREATE(client, ctx, data) {
     const event = data as types.GuildRoleEvent;
     setCachedRole(ctx, event.guild_id, event.role);
-    updateGuildRoles(ctx, event.guild_id, (roles) => [...roles, event.role]);
     client.emit("roleCreate", new Role(event.role, ctx, event.guild_id));
   },
 
@@ -123,10 +123,6 @@ export const guildHandlers: DispatchHandlerMap = {
     const event = data as types.GuildRoleEvent;
     const previous = resolveCachedRole(ctx, event.guild_id, event.role.id);
     setCachedRole(ctx, event.guild_id, event.role);
-    updateGuildRoles(ctx, event.guild_id, (roles) => [
-      ...roles.filter((role) => role.id !== event.role.id),
-      event.role,
-    ]);
     client.emit(
       "roleUpdate",
       new Role(event.role, ctx, event.guild_id),
@@ -138,9 +134,6 @@ export const guildHandlers: DispatchHandlerMap = {
     const event = data as types.GuildRoleDeleteEvent;
     const previous = resolveCachedRole(ctx, event.guild_id, event.role_id);
     ctx.cache.roles.delete(event.role_id);
-    updateGuildRoles(ctx, event.guild_id, (roles) =>
-      roles.filter((role) => role.id !== event.role_id),
-    );
     client.emit("roleDelete", {
       guildId: event.guild_id,
       roleId: event.role_id,
@@ -148,33 +141,6 @@ export const guildHandlers: DispatchHandlerMap = {
     });
   },
 };
-
-function cacheGuild(ctx: StructureContext, raw: types.Guild): void {
-  ctx.cache.guilds.set(raw.id, raw);
-  for (const channel of raw.channels ?? []) {
-    const withGuild: types.Channel = { ...channel, guild_id: raw.id };
-    ctx.cache.channels.set(channel.id, withGuild);
-  }
-  for (const thread of raw.threads ?? []) {
-    const withGuild: types.Channel = { ...thread, guild_id: raw.id };
-    ctx.cache.channels.set(thread.id, withGuild);
-  }
-  for (const role of raw.roles ?? []) setCachedRole(ctx, raw.id, role);
-  for (const member of raw.members ?? []) {
-    const userId = member.user?.id;
-    if (userId !== undefined) cacheMember(ctx, raw.id, userId, member);
-  }
-}
-
-function cacheMember(
-  ctx: StructureContext,
-  guildId: string,
-  userId: string,
-  raw: types.GuildMember,
-): void {
-  ctx.cache.members.set(memberCacheKey(guildId, userId), raw);
-  if (raw.user !== undefined) ctx.cache.users.set(raw.user.id, raw.user);
-}
 
 function clearGuildCaches(
   ctx: StructureContext,
@@ -191,13 +157,4 @@ function clearGuildCaches(
     if (key.startsWith(`${guildId}:`)) ctx.cache.members.delete(key);
   }
   for (const role of guild?.roles ?? []) ctx.cache.roles.delete(role.id);
-}
-
-function updateGuildRoles(
-  ctx: StructureContext,
-  guildId: string,
-  update: (roles: types.Guild["roles"]) => types.Guild["roles"],
-): void {
-  const guild = ctx.cache.guilds.resolve(guildId);
-  if (guild !== undefined) ctx.cache.guilds.set(guildId, { ...guild, roles: update(guild.roles) });
 }

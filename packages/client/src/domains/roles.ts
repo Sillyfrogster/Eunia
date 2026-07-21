@@ -54,10 +54,6 @@ export class RolesDomain {
       setCachedRole(this.ctx, guildId, raw);
       roles.set(raw.id, new Role(raw, this.ctx, guildId));
     }
-    const guild = this.ctx.cache.guilds.resolve(guildId);
-    if (guild !== undefined) {
-      this.ctx.cache.guilds.set(guildId, { ...guild, roles: payload });
-    }
     return roles;
   }
 

@@ -5,6 +5,7 @@ import {
   memberCacheKey,
   removeCachedGuildMember,
   resolveCachedRole,
+  setCachedGuild,
   upsertCachedGuildMember,
   type StructureContext,
 } from "../context";
@@ -169,7 +170,7 @@ export class GuildMember {
     const raw = await this.ctx.rest.get<types.Guild>(
       routePath("/guilds/{guildId}", { guildId: this.guildId }),
     );
-    this.ctx.cache.guilds.set(raw.id, raw);
+    setCachedGuild(this.ctx, raw);
     return new Guild(raw, this.ctx);
   }
 

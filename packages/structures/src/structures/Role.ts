@@ -1,7 +1,7 @@
 import { routePath } from "@eunia/rest";
 import { toPermissionBits } from "@eunia/types";
 import type * as types from "@eunia/types";
-import { setCachedRole, type StructureContext } from "../context";
+import { setCachedGuild, setCachedRole, type StructureContext } from "../context";
 import { cdnAssetUrl, type CDNImageOptions } from "../utils/discord";
 import { auditLogRequest, type AuditLogOptions } from "../utils/rest";
 import { BaseStructure } from "./BaseStructure";
@@ -54,7 +54,7 @@ export class Role extends BaseStructure<types.Role> {
     const raw = await this.ctx.rest.get<types.Guild>(
       routePath("/guilds/{guildId}", { guildId: this.guildId }),
     );
-    this.ctx.cache.guilds.set(raw.id, raw);
+    setCachedGuild(this.ctx, raw);
     return new Guild(raw, this.ctx);
   }
 
@@ -80,10 +80,6 @@ export class Role extends BaseStructure<types.Role> {
       auditLogRequest(audit),
     );
     setCachedRole(this.ctx, this.guildId, raw);
-    this.updateCachedGuildRoles((roles) => [
-      ...roles.filter((role) => role.id !== raw.id),
-      raw,
-    ]);
     return new Role(raw, this.ctx, this.guildId);
   }
 
@@ -96,13 +92,5 @@ export class Role extends BaseStructure<types.Role> {
       auditLogRequest(audit),
     );
     this.ctx.cache.roles.delete(this.id);
-    this.updateCachedGuildRoles((roles) => roles.filter((role) => role.id !== this.id));
-  }
-
-  private updateCachedGuildRoles(update: (roles: types.Role[]) => types.Role[]): void {
-    const guild = this.ctx.cache.guilds.resolve(this.guildId);
-    if (guild !== undefined) {
-      this.ctx.cache.guilds.set(this.guildId, { ...guild, roles: update(guild.roles) });
-    }
   }
 }

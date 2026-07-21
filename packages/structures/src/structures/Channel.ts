@@ -3,6 +3,7 @@ import { ChannelType, OverwriteType, can, PermissionFlags } from "@eunia/types";
 import type * as types from "@eunia/types";
 import {
   removeCachedGuildChannel,
+  setCachedGuild,
   upsertCachedGuildChannel,
   type StructureContext,
 } from "../context";
@@ -152,7 +153,7 @@ export class Channel extends BaseStructure<types.Channel> {
     const fetched = await this.ctx.rest.get<types.Guild>(
       routePath("/guilds/{guildId}", { guildId }),
     );
-    this.ctx.cache.guilds.set(guildId, fetched);
+    setCachedGuild(this.ctx, fetched);
     return new Guild(fetched, this.ctx);
   }
 

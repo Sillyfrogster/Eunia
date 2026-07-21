@@ -13,6 +13,10 @@ Structures keep their original payload in `raw`. Cache entries remain plain
 payloads. This lets memory, Redis, Valkey, and custom stores use the same
 serializable values.
 
+Guild relation arrays are stored in the channel, member, and role cache
+domains instead of being copied into each cached guild. The configured limit
+for each domain therefore covers the data held by that relation.
+
 ## Sendable
 
 Every content-bearing method accepts the same `Sendable` input: a plain

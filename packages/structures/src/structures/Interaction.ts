@@ -14,7 +14,7 @@ import {
   MessageFlags,
 } from "@eunia/types";
 import type * as types from "@eunia/types";
-import type { StructureContext } from "../context";
+import { setCachedGuild, type StructureContext } from "../context";
 import {
   normalizeSendable,
   splitMessageFiles,
@@ -358,7 +358,7 @@ class InteractionImpl {
     const raw = await this.ctx.rest.get<types.Guild>(
       routePath("/guilds/{guildId}", { guildId }),
     );
-    this.ctx.cache.guilds.set(raw.id, raw);
+    setCachedGuild(this.ctx, raw);
     return new Guild(raw, this.ctx);
   }
 

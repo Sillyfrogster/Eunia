@@ -1,6 +1,6 @@
 import { routePath } from "@eunia/rest";
 import type * as types from "@eunia/types";
-import type { StructureContext } from "../context";
+import { setCachedGuild, type StructureContext } from "../context";
 import type { Sendable } from "../utils/messages";
 import { normalizeSendable, splitMessageFiles } from "../utils/messages";
 import { BaseStructure } from "./BaseStructure";
@@ -70,7 +70,7 @@ export class Message extends BaseStructure<types.Message> {
     const raw = await this.ctx.rest.get<types.Guild>(
       routePath("/guilds/{guildId}", { guildId }),
     );
-    this.ctx.cache.guilds.set(raw.id, raw);
+    setCachedGuild(this.ctx, raw);
     return new Guild(raw, this.ctx);
   }
 

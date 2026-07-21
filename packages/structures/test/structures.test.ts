@@ -30,8 +30,10 @@ import {
   isInteraction,
   memberCacheKey,
   normalizeSendable,
+  setCachedGuild,
   setCachedRole,
   snowflakeTimestamp,
+  upsertCachedGuildMember,
   type StructureCacheShape,
   type StructureContext,
 } from "../src";
@@ -454,8 +456,7 @@ describe("User and Channel", () => {
     const { context, rest } = makeContext();
     const raw = channel({ topic: "old" });
     const edited = channel({ topic: "new" });
-    context.cache.guilds.set(GUILD_ID, guild({ channels: [raw] }));
-    context.cache.channels.set(CHANNEL_ID, raw);
+    setCachedGuild(context, guild({ channels: [raw] }));
     rest.queue(edited, edited);
 
     const original = new Channel(raw, context);
@@ -554,12 +555,39 @@ describe("Guild, member, and role", () => {
     expect(context.cache.users.resolve(USER_ID)).toEqual(raw.user);
   });
 
+  test("stores guild relations only in their own cache domains", () => {
+    const { context } = makeContext();
+    const rawMember = member();
+    const rawChannel = channel();
+    const rawRole = role();
+
+    setCachedGuild(context, guild({
+      channels: [rawChannel],
+      members: [rawMember],
+      roles: [rawRole],
+    }));
+
+    const cachedGuild = context.cache.guilds.resolve(GUILD_ID);
+    expect(cachedGuild?.channels).toEqual([]);
+    expect(cachedGuild?.members).toEqual([]);
+    expect(cachedGuild?.roles).toEqual([]);
+    expect(context.cache.channels.resolve(CHANNEL_ID)?.id).toBe(CHANNEL_ID);
+    expect(context.cache.members.resolve(memberCacheKey(GUILD_ID, USER_ID))).toEqual(
+      rawMember,
+    );
+    expect(context.cache.roles.resolve(ROLE_ID)?.raw).toEqual(rawRole);
+
+    upsertCachedGuildMember(context, GUILD_ID, USER_ID, {
+      ...rawMember,
+      roles: [...rawMember.roles, SECOND_USER_ID],
+    });
+
+    expect(context.cache.guilds.resolve(GUILD_ID)).toBe(cachedGuild);
+  });
+
   test("calculates role permissions and runs common moderation methods", async () => {
     const { context, rest } = makeContext();
-    context.cache.guilds.set(
-      GUILD_ID,
-      guild({ owner_id: SECOND_USER_ID, members: [member()] }),
-    );
+    setCachedGuild(context, guild({ owner_id: SECOND_USER_ID, members: [member()] }));
     setCachedRole(context, GUILD_ID, role());
     rest.queue(member({ nick: "New name" }), member(), undefined, undefined, undefined);
     const structure = new GuildMember(member(), context, GUILD_ID, USER_ID);
@@ -583,7 +611,7 @@ describe("Guild, member, and role", () => {
 
   test("guild bulk accessors return plain read-only maps", () => {
     const { context } = makeContext();
-    context.cache.guilds.set(GUILD_ID, guild({ members: [member()] }));
+    setCachedGuild(context, guild({ members: [member()] }));
     const structure = new Guild(guild(), context);
 
     const roles = structure.roles;

@@ -187,6 +187,8 @@ describe("dispatch routing", () => {
 
     expect(received?.name).toBe("Eunia test guild");
     expect(client.cache.channels.resolve(CHANNEL_ID)?.guild_id).toBe(GUILD_ID);
+    expect(client.cache.guilds.resolve(GUILD_ID)?.channels).toEqual([]);
+    expect(client.cache.guilds.resolve(GUILD_ID)?.roles).toEqual([]);
     expect(received?.channel(CHANNEL_ID)?.guild?.id).toBe(GUILD_ID);
   });
 

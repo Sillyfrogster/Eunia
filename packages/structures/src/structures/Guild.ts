@@ -72,6 +72,11 @@ export class Guild extends BaseStructure<types.Guild> {
       const role = new Role(raw, this.ctx, this.id);
       roles.set(role.id, role);
     }
+    for (const cached of this.ctx.cache.roles.values()) {
+      if (cached.guildId !== this.id) continue;
+      const role = new Role(cached.raw, this.ctx, this.id);
+      roles.set(role.id, role);
+    }
     return roles;
   }
 
@@ -188,7 +193,6 @@ export class Guild extends BaseStructure<types.Guild> {
       setCachedRole(this.ctx, this.id, raw);
       roles.set(raw.id, new Role(raw, this.ctx, this.id));
     }
-    this.updateCachedRoles(payload);
     return roles;
   }
 
@@ -243,12 +247,6 @@ export class Guild extends BaseStructure<types.Guild> {
       auditLogRequest(audit),
     );
     setCachedRole(this.ctx, this.id, raw);
-    this.updateCachedRoles([
-      ...(this.ctx.cache.guilds.resolve(this.id)?.roles ?? []).filter(
-        (role) => role.id !== raw.id,
-      ),
-      raw,
-    ]);
     return new Role(raw, this.ctx, this.id);
   }
 
@@ -281,11 +279,6 @@ export class Guild extends BaseStructure<types.Guild> {
             : { default_member_permissions: toPermissionBits(permissions).toString() }),
       },
     );
-  }
-
-  private updateCachedRoles(roles: types.Role[]): void {
-    const cached = this.ctx.cache.guilds.resolve(this.id);
-    if (cached !== undefined) this.ctx.cache.guilds.set(this.id, { ...cached, roles });
   }
 
   private cachedPayload(): types.Guild {
