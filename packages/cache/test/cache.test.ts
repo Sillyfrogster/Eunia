@@ -106,6 +106,35 @@ describe("MemoryStore", () => {
     expect(store.get("third")).toBe("third");
   });
 
+  test("reports replacements, eviction, deletion, and clearing", () => {
+    const store = new MemoryStore<string>({ maxSize: 2 });
+    const changes: string[] = [];
+    store.subscribe((change) => {
+      changes.push(
+        change.type === "clear"
+          ? "clear"
+          : `${change.type}:${change.id}:${change.value}`,
+      );
+    });
+
+    store.set("first", "one");
+    store.set("first", "updated");
+    store.set("second", "two");
+    store.set("third", "three");
+    store.delete("second");
+    store.clear();
+
+    expect(changes).toEqual([
+      "set:first:one",
+      "set:first:updated",
+      "set:second:two",
+      "set:third:three",
+      "delete:first:updated",
+      "delete:second:two",
+      "clear",
+    ]);
+  });
+
   test("expires values without timers", () => {
     let now = 1_000;
     const store = new MemoryStore<string>({

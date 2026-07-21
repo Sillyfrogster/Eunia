@@ -4,6 +4,13 @@ export interface MemoryStoreOptions {
   now?: () => number;
 }
 
+export type MemoryStoreChange<T> =
+  | { type: "set"; id: string; value: T; previous?: T }
+  | { type: "delete"; id: string; value: T }
+  | { type: "clear" };
+
+export type MemoryStoreListener<T> = (change: MemoryStoreChange<T>) => void;
+
 interface MemoryEntry<T> {
   value: T;
   expiresAt?: number;
@@ -16,6 +23,7 @@ export class MemoryStore<T> {
   readonly ttl: number | undefined;
 
   private readonly items = new Map<string, MemoryEntry<T>>();
+  private readonly listeners = new Set<MemoryStoreListener<unknown>>();
   private readonly now: () => number;
 
   constructor(options: MemoryStoreOptions | number = {}) {
@@ -39,7 +47,7 @@ export class MemoryStore<T> {
     if (entry === undefined) return undefined;
 
     if (this.isExpired(entry)) {
-      this.items.delete(id);
+      this.removeEntry(id, entry);
       return undefined;
     }
 
@@ -56,20 +64,29 @@ export class MemoryStore<T> {
         ? { value }
         : { value, expiresAt: this.now() + ttl };
 
+    const previous = this.items.get(id);
     this.items.delete(id);
     this.items.set(id, entry);
+    this.emit(
+      previous === undefined
+        ? { type: "set", id, value }
+        : { type: "set", id, value, previous: previous.value },
+    );
     this.evictOverflow();
   }
 
   delete(id: string): boolean {
-    return this.items.delete(id);
+    const entry = this.items.get(id);
+    if (entry === undefined) return false;
+    this.removeEntry(id, entry);
+    return true;
   }
 
   has(id: string): boolean {
     const entry = this.items.get(id);
     if (entry === undefined) return false;
     if (this.isExpired(entry)) {
-      this.items.delete(id);
+      this.removeEntry(id, entry);
       return false;
     }
 
@@ -79,7 +96,15 @@ export class MemoryStore<T> {
   }
 
   clear(): void {
+    if (this.items.size === 0) return;
     this.items.clear();
+    this.emit({ type: "clear" });
+  }
+
+  subscribe(listener: MemoryStoreListener<T>): () => void {
+    const registered = listener as MemoryStoreListener<unknown>;
+    this.listeners.add(registered);
+    return () => this.listeners.delete(registered);
   }
 
   get size(): number {
@@ -106,7 +131,8 @@ export class MemoryStore<T> {
     while (this.items.size > this.maxSize) {
       const oldest = this.items.keys().next().value;
       if (oldest === undefined) return;
-      this.items.delete(oldest);
+      const entry = this.items.get(oldest);
+      if (entry !== undefined) this.removeEntry(oldest, entry);
     }
   }
 
@@ -118,9 +144,18 @@ export class MemoryStore<T> {
     const now = this.now();
     for (const [id, entry] of this.items) {
       if (entry.expiresAt !== undefined && entry.expiresAt <= now) {
-        this.items.delete(id);
+        this.removeEntry(id, entry);
       }
     }
+  }
+
+  private removeEntry(id: string, entry: MemoryEntry<T>): void {
+    this.items.delete(id);
+    this.emit({ type: "delete", id, value: entry.value });
+  }
+
+  private emit(change: MemoryStoreChange<T>): void {
+    for (const listener of this.listeners) listener(change);
   }
 }
 

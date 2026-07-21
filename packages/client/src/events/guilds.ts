@@ -3,6 +3,9 @@ import {
   Guild,
   GuildMember,
   Role,
+  cachedGuildChannelIds,
+  cachedGuildMemberIds,
+  cachedGuildRoleIds,
   memberCacheKey,
   removeCachedGuildMember,
   resolveCachedRole,
@@ -41,7 +44,7 @@ export const guildHandlers: DispatchHandlerMap = {
       ctx.cache.guilds.set(event.id, { ...previousRaw, unavailable: true });
     } else {
       ctx.cache.guilds.delete(event.id);
-      clearGuildCaches(ctx, event.id, previousRaw);
+      clearGuildCaches(ctx, event.id);
     }
     client.emit("guildDelete", {
       id: event.id,
@@ -145,16 +148,13 @@ export const guildHandlers: DispatchHandlerMap = {
 function clearGuildCaches(
   ctx: StructureContext,
   guildId: string,
-  guild: types.Guild | undefined,
 ): void {
-  for (const [id, channel] of ctx.cache.channels.entries()) {
-    if (channel.guild_id === guildId) ctx.cache.channels.delete(id);
-  }
+  for (const id of cachedGuildChannelIds(ctx, guildId)) ctx.cache.channels.delete(id);
   for (const [id, message] of ctx.cache.messages.entries()) {
     if (message.guild_id === guildId) ctx.cache.messages.delete(id);
   }
-  for (const key of ctx.cache.members.keys()) {
-    if (key.startsWith(`${guildId}:`)) ctx.cache.members.delete(key);
+  for (const userId of cachedGuildMemberIds(ctx, guildId)) {
+    ctx.cache.members.delete(memberCacheKey(guildId, userId));
   }
-  for (const role of guild?.roles ?? []) ctx.cache.roles.delete(role.id);
+  for (const roleId of cachedGuildRoleIds(ctx, guildId)) ctx.cache.roles.delete(roleId);
 }

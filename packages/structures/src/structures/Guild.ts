@@ -2,6 +2,9 @@ import { routePath } from "@eunia/rest";
 import { toPermissionBits } from "@eunia/types";
 import type * as types from "@eunia/types";
 import {
+  cachedGuildChannelIds,
+  cachedGuildMemberIds,
+  cachedGuildRoleIds,
   getCachedRole,
   memberCacheKey,
   removeCachedGuildMember,
@@ -58,8 +61,9 @@ export class Guild extends BaseStructure<types.Guild> {
       const channel = new Channel({ ...raw, guild_id: this.id }, this.ctx);
       channels.set(channel.id, channel);
     }
-    for (const raw of this.ctx.cache.channels.values()) {
-      if (raw.guild_id !== this.id) continue;
+    for (const id of cachedGuildChannelIds(this.ctx, this.id)) {
+      const raw = this.ctx.cache.channels.resolve(id);
+      if (raw === undefined) continue;
       const channel = new Channel(raw, this.ctx);
       channels.set(channel.id, channel);
     }
@@ -72,8 +76,9 @@ export class Guild extends BaseStructure<types.Guild> {
       const role = new Role(raw, this.ctx, this.id);
       roles.set(role.id, role);
     }
-    for (const cached of this.ctx.cache.roles.values()) {
-      if (cached.guildId !== this.id) continue;
+    for (const id of cachedGuildRoleIds(this.ctx, this.id)) {
+      const cached = this.ctx.cache.roles.resolve(id);
+      if (cached === undefined || cached.guildId !== this.id) continue;
       const role = new Role(cached.raw, this.ctx, this.id);
       roles.set(role.id, role);
     }
@@ -87,9 +92,9 @@ export class Guild extends BaseStructure<types.Guild> {
       if (userId === undefined) continue;
       members.set(userId, new GuildMember(raw, this.ctx, this.id, userId));
     }
-    for (const [key, raw] of this.ctx.cache.members.entries()) {
-      if (!key.startsWith(`${this.id}:`)) continue;
-      const userId = key.slice(this.id.length + 1);
+    for (const userId of cachedGuildMemberIds(this.ctx, this.id)) {
+      const raw = this.ctx.cache.members.resolve(memberCacheKey(this.id, userId));
+      if (raw === undefined) continue;
       members.set(userId, new GuildMember(raw, this.ctx, this.id, userId));
     }
     return members;

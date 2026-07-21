@@ -15,7 +15,12 @@ export {
   type MemoryAdapterConfig,
   type RedisAdapterConfig,
 } from "./cache";
-export { MemoryStore, type MemoryStoreOptions } from "./memory";
+export {
+  MemoryStore,
+  type MemoryStoreChange,
+  type MemoryStoreListener,
+  type MemoryStoreOptions,
+} from "./memory";
 export {
   RedisCacheAdapter,
   ValkeyCacheAdapter,

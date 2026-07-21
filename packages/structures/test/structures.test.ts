@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Cache } from "@eunia/cache";
+import { Cache, type CacheOptions } from "@eunia/cache";
 import { DiscordError, type EuniaRest, type RequestPath } from "@eunia/rest";
 import {
   ApplicationCommandType,
@@ -104,13 +104,16 @@ class FakeRest {
   }
 }
 
-function makeContext(): { context: StructureContext; rest: FakeRest } {
+function makeContext(cacheOptions: CacheOptions = {}): {
+  context: StructureContext;
+  rest: FakeRest;
+} {
   const rest = new FakeRest();
   return {
     rest,
     context: {
       rest: rest as unknown as EuniaRest,
-      cache: new Cache<StructureCacheShape>(),
+      cache: new Cache<StructureCacheShape>(cacheOptions),
     },
   };
 }
@@ -583,6 +586,20 @@ describe("Guild, member, and role", () => {
     });
 
     expect(context.cache.guilds.resolve(GUILD_ID)).toBe(cachedGuild);
+  });
+
+  test("removes evicted relations from guild indexes", () => {
+    const { context } = makeContext({
+      policies: { channels: { maxSize: 1 } },
+    });
+    const secondChannelId = "123456789012345680";
+
+    setCachedGuild(context, guild({
+      channels: [channel(), channel({ id: secondChannelId })],
+    }));
+
+    const structure = new Guild(guild({ channels: [] }), context);
+    expect([...structure.channels.keys()]).toEqual([secondChannelId]);
   });
 
   test("calculates role permissions and runs common moderation methods", async () => {

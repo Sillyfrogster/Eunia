@@ -38,6 +38,9 @@ export {
 export type { AuditLogOptions } from "./utils/rest";
 
 export {
+  cachedGuildChannelIds,
+  cachedGuildMemberIds,
+  cachedGuildRoleIds,
   getCachedRole,
   memberCacheKey,
   removeCachedGuildChannel,
