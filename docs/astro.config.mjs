@@ -56,6 +56,22 @@ export default defineConfig({
           ],
         },
         {
+          label: "API reference",
+          collapsed: true,
+          items: [
+            { label: "Overview", slug: "reference/api" },
+            { label: "Client", slug: "reference/api/client" },
+            { label: "Commands", slug: "reference/api/commands" },
+            { label: "Structures", slug: "reference/api/structures" },
+            { label: "Cache", slug: "reference/api/cache" },
+            { label: "Gateway", slug: "reference/api/gateway" },
+            { label: "REST", slug: "reference/api/rest" },
+            { label: "Helpers", slug: "reference/api/helpers" },
+            { label: "Logging", slug: "reference/api/logging" },
+            { label: "Discord types", slug: "reference/api/types" },
+          ],
+        },
+        {
           label: "Examples",
           items: [{ label: "Example bots", slug: "examples" }],
         },

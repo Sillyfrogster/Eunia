@@ -160,3 +160,21 @@ li {
     transition-duration: 0.01ms !important;
   }
 }
+
+@media (max-width: 50rem) {
+  .sl-markdown-content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .sl-markdown-content th,
+  .sl-markdown-content td {
+    min-width: 8rem;
+  }
+
+  .sl-markdown-content th:last-child,
+  .sl-markdown-content td:last-child {
+    min-width: 18rem;
+  }
+}

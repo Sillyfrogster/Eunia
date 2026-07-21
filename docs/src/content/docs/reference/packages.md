@@ -50,4 +50,4 @@ declare const message: Message;
 
 The client combines the modules for most bots. You can also use the cache, gateway, REST client, command manager, or structures directly through the same package exports.
 
-Use [feature coverage](../coverage/) to check which Discord areas have high-level methods.
+Use the [API reference](../api/) to look up public exports. Use [feature coverage](../coverage/) to check which Discord areas have high-level methods.
