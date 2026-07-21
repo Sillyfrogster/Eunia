@@ -20,6 +20,7 @@ import {
   splitMessageFiles,
   type Sendable,
 } from "../utils/messages";
+import { freezeSnapshot } from "./BaseStructure";
 import { Channel } from "./Channel";
 import { Guild } from "./Guild";
 import { GuildMember } from "./GuildMember";
@@ -225,7 +226,7 @@ class InteractionImpl {
     raw: types.Interaction,
     private readonly ctx: StructureContext,
   ) {
-    this.raw = Object.freeze({ ...raw });
+    this.raw = freezeSnapshot(raw);
     this.kind = kindOf(raw);
   }
 

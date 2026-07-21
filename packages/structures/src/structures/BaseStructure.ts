@@ -9,7 +9,7 @@ export abstract class BaseStructure<Raw extends { id: Snowflake }> {
     raw: Raw,
     protected readonly ctx: StructureContext,
   ) {
-    this.raw = Object.freeze({ ...raw });
+    this.raw = freezeSnapshot(raw);
   }
 
   get id(): Snowflake {
@@ -27,4 +27,17 @@ export abstract class BaseStructure<Raw extends { id: Snowflake }> {
   toJSON(): Raw {
     return structuredClone(this.raw) as Raw;
   }
+}
+
+export function freezeSnapshot<T>(value: T): Readonly<T> {
+  return deepFreeze(structuredClone(value));
+}
+
+function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== "object" || Object.isFrozen(value)) {
+    return value;
+  }
+
+  for (const child of Object.values(value)) deepFreeze(child);
+  return Object.freeze(value);
 }

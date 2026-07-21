@@ -468,6 +468,19 @@ describe("User and Channel", () => {
 });
 
 describe("Message", () => {
+  test("keeps nested snapshot data isolated and immutable", () => {
+    const { context } = makeContext();
+    const raw = message({ embeds: [{ title: "Original" }] });
+    const structure = new Message(raw, context);
+
+    raw.embeds[0]!.title = "Changed outside";
+
+    expect(structure.raw.embeds[0]?.title).toBe("Original");
+    expect(Object.isFrozen(structure.raw.embeds)).toBe(true);
+    expect(Object.isFrozen(structure.raw.embeds[0])).toBe(true);
+    expect(() => structure.raw.embeds.push({ title: "Changed inside" })).toThrow();
+  });
+
   test("resolves related raw payloads from the hot cache", () => {
     const { context } = makeContext();
     const rawChannel = channel();

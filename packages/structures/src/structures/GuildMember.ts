@@ -19,6 +19,7 @@ import {
   checkedDeleteMessageSeconds,
   type AuditLogOptions,
 } from "../utils/rest";
+import { freezeSnapshot } from "./BaseStructure";
 import { Guild } from "./Guild";
 import { Role } from "./Role";
 import { User } from "./User";
@@ -48,7 +49,7 @@ export class GuildMember {
     if (id.length === 0) {
       throw new TypeError("GuildMember requires a user id.");
     }
-    this.raw = Object.freeze({ ...raw });
+    this.raw = freezeSnapshot(raw);
   }
 
   get createdTimestamp(): number {
