@@ -1,6 +1,7 @@
 # Eunia
 
 [![npm version](https://img.shields.io/npm/v/%40sillyfrogster%2Feunia?label=npm)](https://www.npmjs.com/package/@sillyfrogster/eunia)
+[![Documentation](https://img.shields.io/badge/docs-read-285C70)](https://sillyfrogster.github.io/Eunia/)
 [![Discord support server](https://img.shields.io/badge/Discord-Support_server-5865F2?logo=discord&logoColor=white)](https://discord.gg/WuPqrRtYHX)
 
 Eunia is a TypeScript Discord library built for Bun. It keeps the core small,
