@@ -2,8 +2,11 @@ import { routePath } from "@eunia/rest";
 import { toPermissionBits } from "@eunia/types";
 import type * as types from "@eunia/types";
 import {
+  getCachedRole,
   memberCacheKey,
   removeCachedGuildMember,
+  resolveCachedRole,
+  setCachedRole,
   upsertCachedGuildChannel,
   upsertCachedGuildMember,
   type StructureContext,
@@ -133,7 +136,7 @@ export class Guild extends BaseStructure<types.Guild> {
 
   role(roleId: string): Role | undefined {
     const raw =
-      this.ctx.cache.roles.resolve(roleId) ??
+      resolveCachedRole(this.ctx, this.id, roleId) ??
       this.cachedPayload().roles.find((role) => role.id === roleId);
     return raw === undefined ? undefined : new Role(raw, this.ctx, this.id);
   }
@@ -182,7 +185,7 @@ export class Guild extends BaseStructure<types.Guild> {
     );
     const roles = new Map<string, Role>();
     for (const raw of payload) {
-      this.ctx.cache.roles.set(raw.id, raw);
+      setCachedRole(this.ctx, this.id, raw);
       roles.set(raw.id, new Role(raw, this.ctx, this.id));
     }
     this.updateCachedRoles(payload);
@@ -190,7 +193,7 @@ export class Guild extends BaseStructure<types.Guild> {
   }
 
   async fetchRole(roleId: string): Promise<Role> {
-    const cached = await this.ctx.cache.roles.get(roleId);
+    const cached = await getCachedRole(this.ctx, this.id, roleId);
     if (cached !== undefined) return new Role(cached, this.ctx, this.id);
     const roles = await this.fetchRoles();
     const role = roles.get(roleId);
@@ -239,7 +242,7 @@ export class Guild extends BaseStructure<types.Guild> {
       },
       auditLogRequest(audit),
     );
-    this.ctx.cache.roles.set(raw.id, raw);
+    setCachedRole(this.ctx, this.id, raw);
     this.updateCachedRoles([
       ...(this.ctx.cache.guilds.resolve(this.id)?.roles ?? []).filter(
         (role) => role.id !== raw.id,

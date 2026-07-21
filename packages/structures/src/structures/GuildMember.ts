@@ -4,6 +4,7 @@ import type * as types from "@eunia/types";
 import {
   memberCacheKey,
   removeCachedGuildMember,
+  resolveCachedRole,
   upsertCachedGuildMember,
   type StructureContext,
 } from "../context";
@@ -96,7 +97,7 @@ export class GuildMember {
     let bitfield = 0n;
     const roleIds = new Set([this.guildId, ...this.raw.roles]);
     for (const roleId of roleIds) {
-      const role = this.ctx.cache.roles.resolve(roleId) ??
+      const role = resolveCachedRole(this.ctx, this.guildId, roleId) ??
         guild?.roles.find((candidate) => candidate.id === roleId);
       if (role !== undefined) bitfield |= BigInt(role.permissions);
     }
@@ -123,7 +124,7 @@ export class GuildMember {
     const guild = this.ctx.cache.guilds.resolve(this.guildId);
     for (const roleId of new Set([this.guildId, ...this.raw.roles])) {
       const raw =
-        this.ctx.cache.roles.resolve(roleId) ??
+        resolveCachedRole(this.ctx, this.guildId, roleId) ??
         guild?.roles.find((candidate) => candidate.id === roleId);
       if (raw !== undefined) roles.set(roleId, new Role(raw, this.ctx, this.guildId));
     }

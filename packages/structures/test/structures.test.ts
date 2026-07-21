@@ -30,6 +30,7 @@ import {
   isInteraction,
   memberCacheKey,
   normalizeSendable,
+  setCachedRole,
   snowflakeTimestamp,
   type StructureCacheShape,
   type StructureContext,
@@ -39,6 +40,7 @@ const USER_ID = "175928847299117063";
 const SECOND_USER_ID = "175928847299117064";
 const CHANNEL_ID = "123456789012345678";
 const GUILD_ID = "987654321098765432";
+const SECOND_GUILD_ID = "987654321098765433";
 const MESSAGE_ID = "111111111111111111";
 const ROLE_ID = "444444444444444444";
 
@@ -529,6 +531,15 @@ describe("Message", () => {
 });
 
 describe("Guild, member, and role", () => {
+  test("rejects a cached role that belongs to another guild", () => {
+    const { context } = makeContext();
+    setCachedRole(context, SECOND_GUILD_ID, role());
+
+    const structure = new Guild(guild({ roles: [] }), context);
+
+    expect(structure.role(ROLE_ID)).toBeUndefined();
+  });
+
   test("fetches members and stores their raw payload under the guild key", async () => {
     const { context, rest } = makeContext();
     const raw = member();
@@ -548,7 +559,7 @@ describe("Guild, member, and role", () => {
       GUILD_ID,
       guild({ owner_id: SECOND_USER_ID, members: [member()] }),
     );
-    context.cache.roles.set(ROLE_ID, role());
+    setCachedRole(context, GUILD_ID, role());
     rest.queue(member({ nick: "New name" }), member(), undefined, undefined, undefined);
     const structure = new GuildMember(member(), context, GUILD_ID, USER_ID);
 
@@ -583,7 +594,7 @@ describe("Guild, member, and role", () => {
   test("applies channel overwrites in Discord's precedence order", () => {
     const { context } = makeContext();
     context.cache.guilds.set(GUILD_ID, guild({ owner_id: SECOND_USER_ID }));
-    context.cache.roles.set(ROLE_ID, role());
+    setCachedRole(context, GUILD_ID, role());
     const structure = new GuildMember(member(), context, GUILD_ID, USER_ID);
     const guildChannel = new Channel(
       channel({
@@ -622,7 +633,7 @@ describe("Guild, member, and role", () => {
       permissions: PermissionFlags.BanMembers.toString() as `${bigint}`,
     });
     context.cache.guilds.set(GUILD_ID, guild({ owner_id: SECOND_USER_ID }));
-    context.cache.roles.set(ROLE_ID, role());
+    setCachedRole(context, GUILD_ID, role());
     rest.queue(updated, undefined);
     const structure = new Role(role(), context, GUILD_ID);
 

@@ -1,7 +1,7 @@
 import { routePath } from "@eunia/rest";
 import { toPermissionBits } from "@eunia/types";
 import type * as types from "@eunia/types";
-import type { StructureContext } from "../context";
+import { setCachedRole, type StructureContext } from "../context";
 import { cdnAssetUrl, type CDNImageOptions } from "../utils/discord";
 import { auditLogRequest, type AuditLogOptions } from "../utils/rest";
 import { BaseStructure } from "./BaseStructure";
@@ -79,7 +79,7 @@ export class Role extends BaseStructure<types.Role> {
       },
       auditLogRequest(audit),
     );
-    this.ctx.cache.roles.set(raw.id, raw);
+    setCachedRole(this.ctx, this.guildId, raw);
     this.updateCachedGuildRoles((roles) => [
       ...roles.filter((role) => role.id !== raw.id),
       raw,

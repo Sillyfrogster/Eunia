@@ -5,6 +5,8 @@ import {
   Role,
   memberCacheKey,
   removeCachedGuildMember,
+  resolveCachedRole,
+  setCachedRole,
   upsertCachedGuildMember,
   upsertCachedGuildMembers,
   type StructureContext,
@@ -112,15 +114,15 @@ export const guildHandlers: DispatchHandlerMap = {
 
   GUILD_ROLE_CREATE(client, ctx, data) {
     const event = data as types.GuildRoleEvent;
-    ctx.cache.roles.set(event.role.id, event.role);
+    setCachedRole(ctx, event.guild_id, event.role);
     updateGuildRoles(ctx, event.guild_id, (roles) => [...roles, event.role]);
     client.emit("roleCreate", new Role(event.role, ctx, event.guild_id));
   },
 
   GUILD_ROLE_UPDATE(client, ctx, data) {
     const event = data as types.GuildRoleEvent;
-    const previous = ctx.cache.roles.resolve(event.role.id);
-    ctx.cache.roles.set(event.role.id, event.role);
+    const previous = resolveCachedRole(ctx, event.guild_id, event.role.id);
+    setCachedRole(ctx, event.guild_id, event.role);
     updateGuildRoles(ctx, event.guild_id, (roles) => [
       ...roles.filter((role) => role.id !== event.role.id),
       event.role,
@@ -134,7 +136,7 @@ export const guildHandlers: DispatchHandlerMap = {
 
   GUILD_ROLE_DELETE(client, ctx, data) {
     const event = data as types.GuildRoleDeleteEvent;
-    const previous = ctx.cache.roles.resolve(event.role_id);
+    const previous = resolveCachedRole(ctx, event.guild_id, event.role_id);
     ctx.cache.roles.delete(event.role_id);
     updateGuildRoles(ctx, event.guild_id, (roles) =>
       roles.filter((role) => role.id !== event.role_id),
@@ -157,7 +159,7 @@ function cacheGuild(ctx: StructureContext, raw: types.Guild): void {
     const withGuild: types.Channel = { ...thread, guild_id: raw.id };
     ctx.cache.channels.set(thread.id, withGuild);
   }
-  for (const role of raw.roles ?? []) ctx.cache.roles.set(role.id, role);
+  for (const role of raw.roles ?? []) setCachedRole(ctx, raw.id, role);
   for (const member of raw.members ?? []) {
     const userId = member.user?.id;
     if (userId !== undefined) cacheMember(ctx, raw.id, userId, member);

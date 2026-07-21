@@ -38,12 +38,16 @@ export {
 export type { AuditLogOptions } from "./utils/rest";
 
 export {
+  getCachedRole,
   memberCacheKey,
   removeCachedGuildChannel,
   removeCachedGuildMember,
+  resolveCachedRole,
+  setCachedRole,
   upsertCachedGuildChannel,
   upsertCachedGuildMember,
   upsertCachedGuildMembers,
+  type CachedRole,
   type StructureCache,
   type StructureCacheShape,
   type StructureContext,

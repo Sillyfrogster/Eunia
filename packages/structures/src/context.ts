@@ -9,7 +9,12 @@ export interface StructureCacheShape {
   channel: types.Channel;
   message: types.Message;
   member: types.GuildMember;
-  role: types.Role;
+  role: CachedRole;
+}
+
+export interface CachedRole {
+  guildId: string;
+  raw: types.Role;
 }
 
 export type StructureCache = Cache<StructureCacheShape>;
@@ -21,6 +26,32 @@ export interface StructureContext {
 
 export function memberCacheKey(guildId: string, userId: string): string {
   return `${guildId}:${userId}`;
+}
+
+export function setCachedRole(
+  ctx: StructureContext,
+  guildId: string,
+  raw: types.Role,
+): void {
+  ctx.cache.roles.set(raw.id, { guildId, raw });
+}
+
+export function resolveCachedRole(
+  ctx: StructureContext,
+  guildId: string,
+  roleId: string,
+): types.Role | undefined {
+  const cached = ctx.cache.roles.resolve(roleId);
+  return cached?.guildId === guildId ? cached.raw : undefined;
+}
+
+export async function getCachedRole(
+  ctx: StructureContext,
+  guildId: string,
+  roleId: string,
+): Promise<types.Role | undefined> {
+  const cached = await ctx.cache.roles.get(roleId);
+  return cached?.guildId === guildId ? cached.raw : undefined;
 }
 
 export function upsertCachedGuildChannel(

@@ -2,6 +2,9 @@ import { routePath } from "@eunia/rest";
 import { toPermissionBits } from "@eunia/types";
 import {
   Role,
+  getCachedRole,
+  resolveCachedRole,
+  setCachedRole,
   type AuditLogOptions,
   type RoleEditInput,
   type StructureContext,
@@ -15,7 +18,7 @@ export class RolesDomain {
 
   async get(guildId: string, roleId: string): Promise<Role> {
     requireId(guildId, roleId);
-    const cached = await this.ctx.cache.roles.get(roleId);
+    const cached = await getCachedRole(this.ctx, guildId, roleId);
     if (cached !== undefined) return new Role(cached, this.ctx, guildId);
 
     const roles = await this.list(guildId);
@@ -27,7 +30,7 @@ export class RolesDomain {
   }
 
   peek(guildId: string, roleId: string): Role | undefined {
-    const raw = this.ctx.cache.roles.resolve(roleId);
+    const raw = resolveCachedRole(this.ctx, guildId, roleId);
     return raw === undefined ? undefined : new Role(raw, this.ctx, guildId);
   }
 
@@ -48,7 +51,7 @@ export class RolesDomain {
     );
     const roles = new Map<string, Role>();
     for (const raw of payload) {
-      this.ctx.cache.roles.set(raw.id, raw);
+      setCachedRole(this.ctx, guildId, raw);
       roles.set(raw.id, new Role(raw, this.ctx, guildId));
     }
     const guild = this.ctx.cache.guilds.resolve(guildId);
@@ -69,7 +72,7 @@ export class RolesDomain {
       serializeRoleInput(input),
       audit.reason === undefined ? {} : { reason: audit.reason },
     );
-    this.ctx.cache.roles.set(raw.id, raw);
+    setCachedRole(this.ctx, guildId, raw);
     return new Role(raw, this.ctx, guildId);
   }
 
@@ -85,7 +88,7 @@ export class RolesDomain {
       serializeRoleInput(input),
       audit.reason === undefined ? {} : { reason: audit.reason },
     );
-    this.ctx.cache.roles.set(raw.id, raw);
+    setCachedRole(this.ctx, guildId, raw);
     return new Role(raw, this.ctx, guildId);
   }
 
