@@ -1,197 +1,238 @@
 ---
 const base = import.meta.env.BASE_URL;
 
-const ready = [
-  ["Commands", "Slash and prefix commands, groups, autocomplete, guards, cooldowns, and deferral."],
-  ["Messages", "Messages, embeds, polls, files, reactions, pins, buttons, selects, and modals."],
-  ["State", "Bounded memory with Redis, Valkey, and custom adapter support."],
-  ["Transport", "Gateway resume and sharding with rate-aware REST requests and bounded retries."],
+const paths = [
+  ["Getting started", "getting-started/"],
+  ["Commands", "guides/commands/"],
+  ["API reference", "reference/api/"],
+  ["Examples", "examples/"],
 ];
 
-const reachable = [
-  ["Less common events", "Receive every dispatch as a raw typed payload when no structure event exists."],
-  ["Administrative endpoints", "Use client.rest for audit logs, scheduled events, auto moderation, and stickers."],
-  ["Components V2", "Send typed payloads directly; layout-specific helpers are not included yet."],
-];
-
-const excluded = [
-  ["Voice", "Connections, codecs, players, and receive pipelines are outside this release."],
-  ["Process supervision", "Eunia does not run or coordinate your application processes."],
-];
+const url = (path: string) => `${base}/${path}`;
 ---
 
-<section class="home-intro" aria-labelledby="why-eunia">
-  <div>
-    <h2 id="why-eunia">Install</h2>
-    <p>
-      Eunia requires Bun 1.3.14 or newer. Install the current alpha release from npm.
-    </p>
+<section class="brand-hero" aria-labelledby="eunia-tagline">
+  <h1 id="_top" class="brand-logo">
+    <img
+      src={url("eunia-logo.png")}
+      alt="Eunia"
+      width="944"
+      height="581"
+    />
+  </h1>
+  <div class="hero-copy">
+    <p id="eunia-tagline">A typed Discord library built for Bun.</p>
+    <div class="hero-actions">
+      <a class="primary-action" href={url("getting-started/")}>Get started</a>
+      <a href={url("reference/api/")}>API reference <span aria-hidden="true">→</span></a>
+    </div>
   </div>
-  <pre aria-label="Install Eunia"><code>bun add @sillyfrogster/eunia@alpha</code></pre>
 </section>
 
-<section class="paths" aria-labelledby="choose-a-path">
-  <h2 id="choose-a-path">Guides</h2>
-  <div class="path-list">
-    <a href={`${base}getting-started/`}>
-      <strong>Getting started</strong>
-      <span>Install Eunia, connect, and publish a development command.</span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a href={`${base}guides/commands/`}>
-      <strong>Commands</strong>
-      <span>Add options, groups, permissions, cooldowns, and component listeners.</span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a href={`${base}guides/cache/`}>
-      <strong>Caching</strong>
-      <span>Use bounded memory alone or add Redis, Valkey, or your own adapter.</span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a href={`${base}guides/modules/`}>
-      <strong>Modules</strong>
-      <span>Own services and lifecycle work without changing the client core.</span>
-      <span aria-hidden="true">→</span>
-    </a>
-    <a href={`${base}reference/api/`}>
-      <strong>API reference</strong>
-      <span>Look up public classes, functions, interfaces, types, and constants.</span>
-      <span aria-hidden="true">→</span>
-    </a>
+<section class="install" aria-labelledby="install-heading">
+  <div>
+    <h2 id="install-heading">Install</h2>
+    <p>Bun 1.3.14 or newer</p>
   </div>
+  <code>bun add @sillyfrogster/eunia@alpha</code>
+</section>
+
+<section class="docs-paths" aria-labelledby="docs-heading">
+  <div class="section-heading">
+    <h2 id="docs-heading">Documentation</h2>
+    <p>Start with a guide or go straight to the reference.</p>
+  </div>
+  <nav aria-label="Documentation paths">
+    {paths.map(([label, href]) => (
+      <a href={url(href)}>
+        <span>{label}</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    ))}
+  </nav>
 </section>
 
 <section class="coverage" aria-labelledby="coverage-heading">
-  <div class="coverage-heading">
+  <div class="section-heading coverage-heading">
     <div>
       <h2 id="coverage-heading">Feature coverage</h2>
-      <p>Eunia is in alpha. This summary tracks full, lower-level, and unsupported areas.</p>
+      <p>What has a high-level API and what does not.</p>
     </div>
-    <a href={`${base}reference/coverage/`}>Full coverage details →</a>
+    <a href={url("reference/coverage/")}>View details <span aria-hidden="true">→</span></a>
   </div>
-
-  <div class="coverage-group ready">
-    <h3><span aria-hidden="true">✓</span> Ready</h3>
-    <div>
-      {ready.map(([name, detail]) => (
-        <article>
-          <strong>{name}</strong>
-          <p>{detail}</p>
-        </article>
-      ))}
-    </div>
-  </div>
-
-  <div class="coverage-group reachable">
-    <h3><span aria-hidden="true">↗</span> Reachable</h3>
-    <div>
-      {reachable.map(([name, detail]) => (
-        <article>
-          <strong>{name}</strong>
-          <p>{detail}</p>
-        </article>
-      ))}
-    </div>
-  </div>
-
-  <div class="coverage-group excluded">
-    <h3><span aria-hidden="true">×</span> Not included</h3>
-    <div>
-      {excluded.map(([name, detail]) => (
-        <article>
-          <strong>{name}</strong>
-          <p>{detail}</p>
-        </article>
-      ))}
-    </div>
+  <div class="coverage-list">
+    <article>
+      <h3><span aria-hidden="true">✓</span> Ready</h3>
+      <p>Commands, messages, components, guild administration, caching, gateway, and REST.</p>
+    </article>
+    <article>
+      <h3><span aria-hidden="true">↗</span> Reachable</h3>
+      <p>Less common events, administrative endpoints, and Components V2 layouts.</p>
+    </article>
+    <article>
+      <h3><span aria-hidden="true">×</span> Not included</h3>
+      <p>Voice connections, codecs, players, receive pipelines, and process supervision.</p>
+    </article>
   </div>
 </section>
 
 <style>
   section {
-    margin-block: clamp(3rem, 6vw, 5rem);
+    margin-block: clamp(2.5rem, 6vw, 5rem);
   }
 
+  h1,
   h2,
   h3,
   p {
     margin: 0;
   }
 
-  h2 {
-    font-size: var(--sl-text-h2);
-  }
-
-  .home-intro {
+  .brand-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
-    gap: clamp(2rem, 6vw, 6rem);
-    align-items: end;
+    grid-template-columns: minmax(0, 1.25fr) minmax(16rem, 0.75fr);
+    gap: clamp(1.5rem, 5vw, 4.5rem);
+    align-items: center;
+    margin-top: clamp(1rem, 4vw, 3rem);
+    padding: clamp(1.25rem, 4vw, 3rem);
+    border-radius: 0.8rem;
+    background: var(--charcoal-700);
+    color: var(--star-dust-500);
   }
 
-  .home-intro p,
-  .coverage-heading p {
-    max-width: 38rem;
-    margin-top: 0.8rem;
+  .brand-logo {
+    line-height: 0;
+  }
+
+  .brand-logo img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .hero-copy {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .hero-copy > p {
+    max-width: 24ch;
+    color: var(--star-dust-300);
+    font-size: clamp(1.2rem, 2.5vw, 1.65rem);
+    font-weight: 580;
+    line-height: 1.45;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem 1.25rem;
+    align-items: center;
+  }
+
+  .hero-actions a {
+    color: var(--star-dust-500);
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  .hero-actions .primary-action {
+    padding: 0.7rem 1rem;
+    border-radius: 0.45rem;
+    background: var(--indigo-100);
+    color: var(--star-dust-700);
+  }
+
+  .hero-actions a:hover,
+  .hero-actions a:focus-visible {
+    color: var(--steel-teal-700);
+  }
+
+  .hero-actions .primary-action:hover,
+  .hero-actions .primary-action:focus-visible {
+    background: var(--indigo-200);
+    color: var(--star-dust-700);
+  }
+
+  .install {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 1.25rem;
+    border-block: 1px solid var(--sl-color-gray-4);
+  }
+
+  .install h2 {
+    font-size: 1rem;
+  }
+
+  .install p {
+    margin-top: 0.15rem;
     color: var(--sl-color-gray-2);
-    font-size: var(--sl-text-base);
-    line-height: 1.65;
+    font-size: 0.9rem;
   }
 
-  .home-intro pre {
-    margin: 0;
-    padding: 1rem 1.15rem;
+  .install code {
+    padding: 0.75rem 0.9rem;
     overflow-x: auto;
-    border: 1px solid var(--sl-color-gray-4);
-    border-radius: 0.6rem;
+    border-radius: 0.45rem;
     background: var(--sl-color-gray-6);
     color: var(--sl-color-white);
     font-size: 0.88rem;
+    white-space: nowrap;
   }
 
-  .paths h2 {
-    margin-bottom: 1.5rem;
+  .section-heading {
+    display: flex;
+    gap: 1.5rem;
+    align-items: end;
+    justify-content: space-between;
+    margin-bottom: 1.4rem;
   }
 
-  .path-list {
+  .section-heading h2 {
+    font-size: var(--sl-text-h2);
+  }
+
+  .section-heading p {
+    max-width: 34rem;
+    color: var(--sl-color-gray-2);
+    line-height: 1.6;
+  }
+
+  .docs-paths nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     border-top: 1px solid var(--sl-color-gray-4);
   }
 
-  .path-list a {
-    display: grid;
-    grid-template-columns: minmax(10rem, 0.7fr) minmax(16rem, 1.3fr) auto;
-    gap: 1.5rem;
+  .docs-paths nav a {
+    display: flex;
+    gap: 1rem;
     align-items: center;
-    padding-block: 1.3rem;
+    justify-content: space-between;
+    padding: 1rem 0;
     border-bottom: 1px solid var(--sl-color-gray-4);
     color: var(--sl-color-white);
+    font-weight: 650;
     text-decoration: none;
-    transition: color 160ms cubic-bezier(0.22, 1, 0.36, 1), padding 160ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .path-list a:hover,
-  .path-list a:focus-visible {
-    padding-inline: 0.5rem;
+  .docs-paths nav a:nth-child(odd) {
+    padding-right: clamp(1.5rem, 5vw, 4rem);
+  }
+
+  .docs-paths nav a:nth-child(even) {
+    padding-left: clamp(1.5rem, 5vw, 4rem);
+    border-left: 1px solid var(--sl-color-gray-4);
+  }
+
+  .docs-paths nav a:hover,
+  .docs-paths nav a:focus-visible,
+  .coverage-heading a:hover,
+  .coverage-heading a:focus-visible {
     color: var(--sl-color-accent);
-  }
-
-  .path-list a span:nth-child(2) {
-    color: var(--sl-color-gray-2);
-    line-height: 1.5;
-  }
-
-  .coverage {
-    padding: clamp(1.5rem, 4vw, 3rem);
-    border-radius: 0.8rem;
-    background: var(--sl-color-gray-6);
-  }
-
-  .coverage-heading {
-    display: flex;
-    gap: 2rem;
-    align-items: end;
-    justify-content: space-between;
-    margin-bottom: 2.5rem;
   }
 
   .coverage-heading a {
@@ -200,71 +241,84 @@ const excluded = [
     font-weight: 650;
   }
 
-  .coverage-group {
+  .coverage-list {
+    border-top: 1px solid var(--sl-color-gray-4);
+  }
+
+  .coverage-list article {
     display: grid;
     grid-template-columns: minmax(8rem, 0.35fr) minmax(0, 1.65fr);
     gap: 1.5rem;
-    padding-block: 1.6rem;
-    border-top: 1px solid var(--sl-color-gray-3);
+    padding-block: 1.2rem;
+    border-bottom: 1px solid var(--sl-color-gray-4);
   }
 
-  .coverage-group h3 {
+  .coverage-list h3 {
     display: flex;
     gap: 0.55rem;
     align-items: baseline;
     font-size: 1rem;
   }
 
-  .coverage-group h3 span {
-    width: 1.25rem;
-    color: var(--sl-color-accent);
-  }
-
-  .coverage-group > div {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.6rem 2.5rem;
-  }
-
-  .coverage-group article p {
-    margin-top: 0.35rem;
-    color: var(--sl-color-gray-2);
-    font-size: 0.92rem;
-    line-height: 1.55;
-  }
-
-  .reachable h3 span {
+  .coverage-list h3 span {
+    width: 1.15rem;
     color: var(--steel-teal-500);
   }
 
-  .excluded h3 span {
+  .coverage-list article:last-child h3 span {
     color: var(--foggy-100);
   }
 
+  .coverage-list p {
+    color: var(--sl-color-gray-2);
+    line-height: 1.6;
+  }
+
   @media (max-width: 50rem) {
-    .home-intro,
-    .coverage-group {
+    .brand-hero {
       grid-template-columns: 1fr;
+      gap: 1rem;
     }
 
-    .path-list a {
-      grid-template-columns: 1fr auto;
-      gap: 0.35rem 1rem;
+    .brand-logo img {
+      max-width: 34rem;
+      margin-inline: auto;
     }
 
-    .path-list a span:nth-child(2) {
-      grid-column: 1 / -1;
+    .hero-copy {
+      justify-items: center;
+      text-align: center;
     }
 
-    .coverage-heading {
+    .install,
+    .section-heading {
       align-items: start;
       flex-direction: column;
+    }
+
+    .install {
+      gap: 0.8rem;
+    }
+
+    .install code {
+      max-width: 100%;
     }
   }
 
   @media (max-width: 34rem) {
-    .coverage-group > div {
+    .docs-paths nav {
       grid-template-columns: 1fr;
+    }
+
+    .docs-paths nav a:nth-child(odd),
+    .docs-paths nav a:nth-child(even) {
+      padding-inline: 0;
+      border-left: 0;
+    }
+
+    .coverage-list article {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
     }
   }
 </style>
