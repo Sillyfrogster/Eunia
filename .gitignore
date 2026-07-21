@@ -1,5 +1,10 @@
 node_modules/
-apps/
+apps/*
+!apps/tsconfig.json
+!apps/slash-commands/
+!apps/slash-commands/**
+!apps/component-listeners/
+!apps/component-listeners/**
 .env*
 !.env.example
 coverage/

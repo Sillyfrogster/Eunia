@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@sillyfrogster/eunia": ["src/index.ts"],
+      "@eunia/*": ["packages/*/src/index.ts"]
+    }
+  }
+}

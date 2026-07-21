@@ -159,6 +159,7 @@ modular without requiring users to install several packages.
 - [Caching](https://sillyfrogster.github.io/Eunia/guides/cache/)
 - [Modules](https://sillyfrogster.github.io/Eunia/guides/modules/)
 - [Feature coverage](https://sillyfrogster.github.io/Eunia/reference/coverage/)
+- [Example bots](https://sillyfrogster.github.io/Eunia/examples/)
 
 ## Work on Eunia
 
