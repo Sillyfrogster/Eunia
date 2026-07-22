@@ -18,19 +18,23 @@ declare const hydrated: Message;
 | --- | --- |
 | Common | `Snowflake`, `BitfieldString`, `ISO8601Timestamp`, `Awaitable`, `JsonValue`, `Locale`, `Localizations` |
 | Applications | Command definitions, options, choices, permissions, integration types, contexts, applications, and teams |
+| Audit logs | Entries, changes, and optional entry details |
 | Auto moderation | Rules, triggers, metadata, actions, and create or modify payloads |
 | Channels | `Channel`, `ChannelType`, overwrites, threads, forum tags, flags, layouts, and video quality |
 | Emojis | `Emoji`, `PartialEmoji` |
 | Entitlements | `Entitlement`, `EntitlementType` |
-| Gateway | READY and RESUMED data plus typed guild, channel, thread, message, member, role, reaction, presence, typing, interaction, and moderation events |
-| Guilds | `Guild`, `GuildMember`, `Role`, bans, welcome screens, levels, flags, and permission utilities |
+| Gateway | Typed Discord dispatch payloads, including guild, channel, message, interaction, voice, soundboard, and rate-limit events |
+| Guilds | `Guild`, `GuildMember`, `Role`, integrations, bans, welcome screens, levels, flags, and permission utilities |
 | Interactions | Command, autocomplete, component, and modal interaction payloads and responses |
 | Invites | Invites, metadata, targets, flags, and create or delete events |
 | Messages | Messages, edits, embeds, attachments, reactions, polls, components, modal fields, resolved data, and uploads |
 | Scheduled events | Event payloads, recurrence rules, statuses, privacy, and entity types |
+| Soundboard | `SoundboardSound` |
+| Stage instances | `StageInstance`, `StagePrivacyLevel` |
 | Stickers | `Sticker`, `StickerItem`, `StickerPack`, and format or type enums |
 | Subscriptions | `Subscription`, `SubscriptionStatus` |
 | Users | `User`, `PartialUser`, flags, premium types, collectibles, nameplates, and primary guild data |
+| Voice | Voice states, voice server updates, and voice channel effects |
 
 ## Permissions
 

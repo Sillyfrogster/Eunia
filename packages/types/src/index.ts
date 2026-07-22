@@ -1,4 +1,5 @@
 export * from "./application";
+export * from "./audit-log";
 export * from "./auto-moderation";
 export * from "./channel";
 export * from "./common";
@@ -10,6 +11,9 @@ export * from "./interaction";
 export * from "./invite";
 export * from "./message";
 export * from "./scheduled-event";
+export * from "./soundboard";
+export * from "./stage-instance";
 export * from "./sticker";
 export * from "./subscription";
 export * from "./user";
+export * from "./voice";
