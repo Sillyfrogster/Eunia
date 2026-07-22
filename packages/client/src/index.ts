@@ -1,12 +1,13 @@
-export {
-  Client,
-  type ClientState,
-  type GuildDeleteInfo,
-  type GuildMemberRemoveInfo,
-  type MessageDeleteBulkInfo,
-  type MessageDeleteInfo,
-  type RoleDeleteInfo,
-} from "./client";
+export { Client } from "./client";
+export type {
+  ClientEventMap,
+  ClientState,
+  GuildDeleteInfo,
+  GuildMemberRemoveInfo,
+  MessageDeleteBulkInfo,
+  MessageDeleteInfo,
+  RoleDeleteInfo,
+} from "./events/client-events";
 export { orderModules, type EuniaModule } from "./modules";
 export {
   resolveIntents,
