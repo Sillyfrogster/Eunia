@@ -58,6 +58,9 @@ new Client(options: ClientOptions)
 | `destroy()` | `Promise<void>` |
 | `updatePresence(presence)` | `Promise<void>` |
 | `requestGuildMembers(request)` | `Promise<void>` |
+| `requestSoundboardSounds(request)` | `Promise<void>` |
+| `requestChannelInfo(request)` | `Promise<void>` |
+| `updateVoiceState(state)` | `Promise<void>` |
 
 Register modules before calling `start`. `destroy` is an alias for `stop`.
 
