@@ -55,6 +55,10 @@ export interface MessageDeleteBulkInfo extends types.MessageDeleteBulkEvent {
   readonly messages: readonly Message[];
 }
 
+export interface ThreadDeleteInfo extends types.ThreadDeleteEvent {
+  readonly thread?: Channel;
+}
+
 export interface ClientEventMap {
   ready: [user: User];
   stopped: [];
@@ -66,6 +70,13 @@ export interface ClientEventMap {
   channelCreate: [channel: Channel];
   channelUpdate: [channel: Channel, previous?: Channel];
   channelDelete: [channel: Channel];
+  channelPinsUpdate: [event: types.ChannelPinsUpdateEvent];
+  threadCreate: [thread: Channel];
+  threadUpdate: [thread: Channel, previous?: Channel];
+  threadDelete: [info: ThreadDeleteInfo];
+  threadListSync: [event: types.ThreadListSyncEvent];
+  threadMemberUpdate: [event: types.ThreadMemberUpdateEvent];
+  threadMembersUpdate: [event: types.ThreadMembersUpdateEvent];
   messageCreate: [message: Message];
   messageUpdate: [
     message: Message | undefined,
@@ -74,6 +85,12 @@ export interface ClientEventMap {
   ];
   messageDelete: [info: MessageDeleteInfo];
   messageDeleteBulk: [info: MessageDeleteBulkInfo];
+  messageReactionAdd: [event: types.MessageReactionAddEvent];
+  messageReactionRemove: [event: types.MessageReactionRemoveEvent];
+  messageReactionRemoveAll: [event: types.MessageReactionRemoveAllEvent];
+  messageReactionRemoveEmoji: [event: types.MessageReactionRemoveEmojiEvent];
+  messagePollVoteAdd: [event: types.MessagePollVoteEvent];
+  messagePollVoteRemove: [event: types.MessagePollVoteEvent];
   guildMemberAdd: [member: GuildMember];
   guildMemberUpdate: [member: GuildMember, previous?: GuildMember];
   guildMemberRemove: [info: GuildMemberRemoveInfo];
@@ -100,6 +117,9 @@ export interface ClientEventMap {
   guildScheduledEventUserRemove: [event: types.GuildScheduledEventUserEvent];
   inviteCreate: [event: types.InviteCreateEvent];
   inviteDelete: [event: types.InviteDeleteEvent];
+  presenceUpdate: [event: types.PresenceUpdateEvent];
+  typingStart: [event: types.TypingStartEvent];
+  webhooksUpdate: [event: types.WebhooksUpdateEvent];
   entitlementCreate: [entitlement: types.Entitlement];
   entitlementUpdate: [entitlement: types.Entitlement];
   entitlementDelete: [entitlement: types.Entitlement];

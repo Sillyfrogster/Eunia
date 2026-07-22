@@ -99,10 +99,23 @@ client.on("messageCreate", (message) => {
 | `channelCreate` | `channel` |
 | `channelUpdate` | `channel`, `previous?` |
 | `channelDelete` | `channel` |
+| `channelPinsUpdate` | `event` |
+| `threadCreate` | `thread` |
+| `threadUpdate` | `thread`, `previous?` |
+| `threadDelete` | `ThreadDeleteInfo` |
+| `threadListSync` | `event` |
+| `threadMemberUpdate` | `event` |
+| `threadMembersUpdate` | `event` |
 | `messageCreate` | `message` |
 | `messageUpdate` | `message`, `previous`, `raw` |
 | `messageDelete` | `MessageDeleteInfo` |
 | `messageDeleteBulk` | `MessageDeleteBulkInfo` |
+| `messageReactionAdd` | `event` |
+| `messageReactionRemove` | `event` |
+| `messageReactionRemoveAll` | `event` |
+| `messageReactionRemoveEmoji` | `event` |
+| `messagePollVoteAdd` | `event` |
+| `messagePollVoteRemove` | `event` |
 | `guildMemberAdd` | `member` |
 | `guildMemberUpdate` | `member`, `previous?` |
 | `guildMemberRemove` | `GuildMemberRemoveInfo` |
@@ -129,6 +142,9 @@ client.on("messageCreate", (message) => {
 | `guildScheduledEventUserRemove` | `event` |
 | `inviteCreate` | `event` |
 | `inviteDelete` | `event` |
+| `presenceUpdate` | `event` |
+| `typingStart` | `event` |
+| `webhooksUpdate` | `event` |
 | `entitlementCreate` | `entitlement` |
 | `entitlementUpdate` | `entitlement` |
 | `entitlementDelete` | `entitlement` |

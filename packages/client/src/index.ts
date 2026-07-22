@@ -8,6 +8,7 @@ export type {
   MessageDeleteBulkInfo,
   MessageDeleteInfo,
   RoleDeleteInfo,
+  ThreadDeleteInfo,
 } from "./events/client-events";
 export { orderModules, type EuniaModule } from "./modules";
 export {

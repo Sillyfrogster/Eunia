@@ -6,7 +6,10 @@ import { guildResourceHandlers } from "./guild-resources";
 import { guildHandlers } from "./guilds";
 import { interactionHandlers } from "./interactions";
 import { lifecycleHandlers } from "./lifecycle";
+import { liveHandlers } from "./live";
+import { messageActivityHandlers } from "./message-activity";
 import { messageHandlers } from "./messages";
+import { threadHandlers } from "./threads";
 import type { DispatchHandler } from "./types";
 
 const handlers: Readonly<Record<string, DispatchHandler>> = {
@@ -15,7 +18,10 @@ const handlers: Readonly<Record<string, DispatchHandler>> = {
   ...guildHandlers,
   ...guildResourceHandlers,
   ...channelHandlers,
+  ...threadHandlers,
   ...messageHandlers,
+  ...messageActivityHandlers,
+  ...liveHandlers,
   ...interactionHandlers,
 };
 
