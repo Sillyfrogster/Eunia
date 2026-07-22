@@ -1,4 +1,5 @@
 import type { ApplicationCommandPermissions } from "./application";
+import type { AuditLogEntry } from "./audit-log";
 import type {
   AutoModerationAction,
   AutoModerationRule,
@@ -8,7 +9,13 @@ import type { Channel, ThreadMember, ChannelType } from "./channel";
 import type { ISO8601Timestamp, Snowflake } from "./common";
 import type { Emoji, PartialEmoji } from "./emoji";
 import type { Entitlement } from "./entitlement";
-import type { Guild, GuildMember, Role, UnavailableGuild } from "./guild";
+import type {
+  Guild,
+  GuildMember,
+  Integration,
+  Role,
+  UnavailableGuild,
+} from "./guild";
 import type { Interaction } from "./interaction";
 import type { InviteCreateEvent, InviteDeleteEvent } from "./invite";
 import type { Message, ReactionType } from "./message";
@@ -18,12 +25,19 @@ import type {
 } from "./scheduled-event";
 import type { Sticker } from "./sticker";
 import type { Subscription } from "./subscription";
+import type { SoundboardSound } from "./soundboard";
+import type { StageInstance } from "./stage-instance";
 import type {
   AvatarDecorationData,
   Collectibles,
   PartialUser,
   User,
 } from "./user";
+import type {
+  VoiceChannelEffectSendEvent,
+  VoiceServerUpdateEvent,
+  VoiceState,
+} from "./voice";
 
 export enum ActivityType {
   Playing = 0,
@@ -104,6 +118,7 @@ export type GuildCreateEvent =
       channels: Channel[];
       threads: Channel[];
       guild_scheduled_events: GuildScheduledEvent[];
+      voice_states: VoiceState[];
       presences: Array<Omit<PresenceUpdateEvent, "guild_id">>;
     })
   | UnavailableGuild;
@@ -116,6 +131,27 @@ export interface GuildDeleteEvent {
 export interface ChannelCreateEvent extends Channel {}
 export interface ChannelUpdateEvent extends Channel {}
 export interface ChannelDeleteEvent extends Channel {}
+
+export interface ChannelInfoEvent {
+  guild_id: Snowflake;
+  channels: Array<{
+    id: Snowflake;
+    status?: string | null;
+    voice_start_time?: number | null;
+  }>;
+}
+
+export interface VoiceChannelStatusUpdateEvent {
+  id: Snowflake;
+  guild_id: Snowflake;
+  status: string | null;
+}
+
+export interface VoiceChannelStartTimeUpdateEvent {
+  id: Snowflake;
+  guild_id: Snowflake;
+  voice_start_time?: number | null;
+}
 
 export interface ThreadCreateEvent extends Channel {
   newly_created?: boolean;
@@ -280,6 +316,38 @@ export interface GuildIntegrationsUpdateEvent {
   guild_id: Snowflake;
 }
 
+export type GuildAuditLogEntryCreateEvent = AuditLogEntry & {
+  guild_id: Snowflake;
+};
+
+export type IntegrationCreateEvent = Omit<Integration, "user"> & {
+  guild_id: Snowflake;
+};
+
+export type IntegrationUpdateEvent = IntegrationCreateEvent;
+
+export interface IntegrationDeleteEvent {
+  id: Snowflake;
+  guild_id: Snowflake;
+  application_id?: Snowflake;
+}
+
+export interface GuildSoundboardSoundDeleteEvent {
+  sound_id: Snowflake;
+  guild_id: Snowflake;
+}
+
+export type GuildSoundboardSoundEvent = SoundboardSound & {
+  guild_id: Snowflake;
+};
+
+export interface GuildSoundboardSoundsUpdateEvent {
+  soundboard_sounds: SoundboardSound[];
+  guild_id: Snowflake;
+}
+
+export type SoundboardSoundsEvent = GuildSoundboardSoundsUpdateEvent;
+
 export interface PresenceUpdateEvent {
   user: PartialUser;
   guild_id: Snowflake;
@@ -343,13 +411,17 @@ export interface GatewayDispatchMap {
   CHANNEL_CREATE: ChannelCreateEvent;
   CHANNEL_UPDATE: ChannelUpdateEvent;
   CHANNEL_DELETE: ChannelDeleteEvent;
+  CHANNEL_INFO: ChannelInfoEvent;
   CHANNEL_PINS_UPDATE: ChannelPinsUpdateEvent;
+  VOICE_CHANNEL_STATUS_UPDATE: VoiceChannelStatusUpdateEvent;
+  VOICE_CHANNEL_START_TIME_UPDATE: VoiceChannelStartTimeUpdateEvent;
   ENTITLEMENT_CREATE: Entitlement;
   ENTITLEMENT_UPDATE: Entitlement;
   ENTITLEMENT_DELETE: Entitlement;
   GUILD_CREATE: GuildCreateEvent;
   GUILD_UPDATE: GuildUpdateEvent;
   GUILD_DELETE: GuildDeleteEvent;
+  GUILD_AUDIT_LOG_ENTRY_CREATE: GuildAuditLogEntryCreateEvent;
   GUILD_BAN_ADD: GuildBanEvent;
   GUILD_BAN_REMOVE: GuildBanEvent;
   GUILD_EMOJIS_UPDATE: GuildEmojisUpdateEvent;
@@ -367,6 +439,14 @@ export interface GatewayDispatchMap {
   GUILD_SCHEDULED_EVENT_DELETE: GuildScheduledEvent;
   GUILD_SCHEDULED_EVENT_USER_ADD: GuildScheduledEventUserEvent;
   GUILD_SCHEDULED_EVENT_USER_REMOVE: GuildScheduledEventUserEvent;
+  GUILD_SOUNDBOARD_SOUND_CREATE: GuildSoundboardSoundEvent;
+  GUILD_SOUNDBOARD_SOUND_UPDATE: GuildSoundboardSoundEvent;
+  GUILD_SOUNDBOARD_SOUND_DELETE: GuildSoundboardSoundDeleteEvent;
+  GUILD_SOUNDBOARD_SOUNDS_UPDATE: GuildSoundboardSoundsUpdateEvent;
+  SOUNDBOARD_SOUNDS: SoundboardSoundsEvent;
+  INTEGRATION_CREATE: IntegrationCreateEvent;
+  INTEGRATION_UPDATE: IntegrationUpdateEvent;
+  INTEGRATION_DELETE: IntegrationDeleteEvent;
   INVITE_CREATE: InviteCreateEvent;
   INVITE_DELETE: InviteDeleteEvent;
   THREAD_CREATE: ThreadCreateEvent;
@@ -386,6 +466,12 @@ export interface GatewayDispatchMap {
   MESSAGE_POLL_VOTE_ADD: MessagePollVoteEvent;
   MESSAGE_POLL_VOTE_REMOVE: MessagePollVoteEvent;
   PRESENCE_UPDATE: PresenceUpdateEvent;
+  VOICE_CHANNEL_EFFECT_SEND: VoiceChannelEffectSendEvent;
+  VOICE_STATE_UPDATE: VoiceState;
+  VOICE_SERVER_UPDATE: VoiceServerUpdateEvent;
+  STAGE_INSTANCE_CREATE: StageInstance;
+  STAGE_INSTANCE_UPDATE: StageInstance;
+  STAGE_INSTANCE_DELETE: StageInstance;
   TYPING_START: TypingStartEvent;
   USER_UPDATE: User;
   WEBHOOKS_UPDATE: WebhooksUpdateEvent;
@@ -393,6 +479,7 @@ export interface GatewayDispatchMap {
   SUBSCRIPTION_CREATE: Subscription;
   SUBSCRIPTION_UPDATE: Subscription;
   SUBSCRIPTION_DELETE: Subscription;
+  GATEWAY_RATE_LIMITED: GatewayRateLimitedEvent;
 }
 
 export type GatewayDispatchName = keyof GatewayDispatchMap;

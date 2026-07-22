@@ -11,6 +11,7 @@ import {
   type ModalSubmitInteractionData,
   type MessageCreate,
   type GatewayDispatchMap,
+  type VoiceState,
 } from "../src";
 
 describe("protocol constants", () => {
@@ -87,6 +88,46 @@ describe("protocol payloads", () => {
     } satisfies GatewayDispatchMap["MESSAGE_POLL_VOTE_ADD"];
 
     expect(pollVote.answer_id).toBe(1);
+  });
+
+  test("maps current channel, voice, soundboard, and rate-limit dispatches", () => {
+    const channelInfo = {
+      guild_id: "1",
+      channels: [{ id: "2", status: "Town hall", voice_start_time: 1_753_075_200 }],
+    } satisfies GatewayDispatchMap["CHANNEL_INFO"];
+    const voiceState = {
+      channel_id: "2",
+      user_id: "3",
+      session_id: "session",
+      deaf: false,
+      mute: false,
+      self_deaf: false,
+      self_mute: false,
+      self_video: false,
+      suppress: false,
+      request_to_speak_timestamp: null,
+    } satisfies VoiceState;
+    const sounds = {
+      guild_id: "1",
+      soundboard_sounds: [{
+        name: "Quack",
+        sound_id: "4",
+        volume: 1,
+        emoji_id: null,
+        emoji_name: "🦆",
+        available: true,
+      }],
+    } satisfies GatewayDispatchMap["SOUNDBOARD_SOUNDS"];
+    const limited = {
+      opcode: 8,
+      retry_after: 1.5,
+      meta: { guild_id: "1", nonce: "members" },
+    } satisfies GatewayDispatchMap["GATEWAY_RATE_LIMITED"];
+
+    expect(channelInfo.channels[0]?.status).toBe("Town hall");
+    expect(voiceState.channel_id).toBe("2");
+    expect(sounds.soundboard_sounds[0]?.name).toBe("Quack");
+    expect(limited.retry_after).toBe(1.5);
   });
 
   test("keeps interaction command data typed", () => {
