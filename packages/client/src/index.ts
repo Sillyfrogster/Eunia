@@ -74,8 +74,11 @@ export {
   ActivityType,
   Intents,
   type GatewayPresence,
+  type RequestChannelInfoData,
   type RequestGuildMembersData,
+  type RequestSoundboardSoundsData,
   type ShardPlan,
+  type UpdateVoiceStateData,
 } from "@eunia/gateway";
 export {
   DiscordError,

@@ -15,7 +15,10 @@ import {
   type GatewayBotInfo,
   type GatewayPresence,
   type ReconnectInfo,
+  type RequestChannelInfoData,
   type RequestGuildMembersData,
+  type RequestSoundboardSoundsData,
+  type UpdateVoiceStateData,
 } from "@eunia/gateway";
 import { EuniaRest, routePath } from "@eunia/rest";
 import { createLogger, type Logger } from "@eunia/shared";
@@ -354,6 +357,18 @@ export class Client extends EventEmitter {
 
   requestGuildMembers(request: RequestGuildMembersData): Promise<void> {
     return this.requireGateway().requestGuildMembers(request);
+  }
+
+  requestSoundboardSounds(request: RequestSoundboardSoundsData): Promise<void> {
+    return this.requireGateway().requestSoundboardSounds(request);
+  }
+
+  requestChannelInfo(request: RequestChannelInfoData): Promise<void> {
+    return this.requireGateway().requestChannelInfo(request);
+  }
+
+  updateVoiceState(state: UpdateVoiceStateData): Promise<void> {
+    return this.requireGateway().updateVoiceState(state);
   }
 
   /** @internal Updates identity from one shard's READY event. */

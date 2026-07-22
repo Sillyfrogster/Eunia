@@ -154,6 +154,39 @@ describe("commands sent by a ready shard", () => {
         nonce: "members",
       });
 
+      await shard.requestSoundboardSounds({
+        guild_ids: ["123456789012345678"],
+      });
+      expect(await gw.nextOfOp(GatewayOpcode.RequestSoundboardSounds)).toMatchObject({
+        d: { guild_ids: ["123456789012345678"] },
+      });
+
+      await shard.requestChannelInfo({
+        guild_id: "123456789012345678",
+        fields: ["status", "voice_start_time"],
+      });
+      expect(await gw.nextOfOp(GatewayOpcode.RequestChannelInfo)).toMatchObject({
+        d: {
+          guild_id: "123456789012345678",
+          fields: ["status", "voice_start_time"],
+        },
+      });
+
+      await shard.updateVoiceState({
+        guild_id: "123456789012345678",
+        channel_id: "333333333333333333",
+        self_mute: false,
+        self_deaf: true,
+      });
+      expect(await gw.nextOfOp(GatewayOpcode.VoiceStateUpdate)).toMatchObject({
+        d: {
+          guild_id: "123456789012345678",
+          channel_id: "333333333333333333",
+          self_mute: false,
+          self_deaf: true,
+        },
+      });
+
       expect(() =>
         shard.requestGuildMembers({
           guild_id: "123456789012345678",
@@ -173,6 +206,23 @@ describe("commands sent by a ready shard", () => {
           presences: true,
         }),
       ).toThrow(/GuildPresences/);
+      expect(() => shard.requestSoundboardSounds({ guild_ids: [] })).toThrow(
+        /at least one/,
+      );
+      expect(() =>
+        shard.requestChannelInfo({
+          guild_id: "123456789012345678",
+          fields: [],
+        }),
+      ).toThrow(/at least one/);
+      expect(() =>
+        shard.updateVoiceState({
+          guild_id: "123456789012345678",
+          channel_id: "not-an-id",
+          self_mute: false,
+          self_deaf: false,
+        }),
+      ).toThrow(/snowflakes or null/);
     } finally {
       shard.disconnect();
       gw.stop();

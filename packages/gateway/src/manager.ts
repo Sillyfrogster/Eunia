@@ -12,7 +12,10 @@ import type {
   GatewayBotInfo,
   GatewayPresence,
   ReadyData,
+  RequestChannelInfoData,
   RequestGuildMembersData,
+  RequestSoundboardSoundsData,
+  UpdateVoiceStateData,
 } from "./types";
 
 export type ShardPlan =
@@ -119,6 +122,32 @@ export class ShardManager extends EventEmitter {
   /** Sends one member request to the shard that owns its guild. */
   requestGuildMembers(request: RequestGuildMembersData): Promise<void> {
     return this.shardForGuild(request.guild_id).requestGuildMembers(request);
+  }
+
+  /** Requests soundboard sounds from the shards that own the guilds. */
+  async requestSoundboardSounds(request: RequestSoundboardSoundsData): Promise<void> {
+    const guildIdsByShard = new Map<Shard, string[]>();
+    for (const guildId of request.guild_ids) {
+      const shard = this.shardForGuild(guildId);
+      const guildIds = guildIdsByShard.get(shard) ?? [];
+      guildIds.push(guildId);
+      guildIdsByShard.set(shard, guildIds);
+    }
+    await Promise.all(
+      [...guildIdsByShard].map(([shard, guildIds]) =>
+        shard.requestSoundboardSounds({ guild_ids: guildIds })
+      ),
+    );
+  }
+
+  /** Requests ephemeral channel data from the shard that owns the guild. */
+  requestChannelInfo(request: RequestChannelInfoData): Promise<void> {
+    return this.shardForGuild(request.guild_id).requestChannelInfo(request);
+  }
+
+  /** Sends a voice state update to the shard that owns the guild. */
+  updateVoiceState(state: UpdateVoiceStateData): Promise<void> {
+    return this.shardForGuild(state.guild_id).updateVoiceState(state);
   }
 
   /** Applies a presence to every assigned shard. */
