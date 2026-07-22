@@ -36,6 +36,11 @@ export interface GuildMemberRemoveInfo {
   readonly member?: GuildMember;
 }
 
+export interface GuildBanInfo {
+  readonly guildId: string;
+  readonly user: User;
+}
+
 export interface RoleDeleteInfo {
   readonly guildId: string;
   readonly roleId: string;
@@ -72,6 +77,8 @@ export interface ClientEventMap {
   guildMemberAdd: [member: GuildMember];
   guildMemberUpdate: [member: GuildMember, previous?: GuildMember];
   guildMemberRemove: [info: GuildMemberRemoveInfo];
+  guildBanAdd: [info: GuildBanInfo];
+  guildBanRemove: [info: GuildBanInfo];
   roleCreate: [role: Role];
   roleUpdate: [role: Role, previous?: Role];
   roleDelete: [info: RoleDeleteInfo];
@@ -80,6 +87,19 @@ export interface ClientEventMap {
   autoModerationRuleUpdate: [rule: types.AutoModerationRule];
   autoModerationRuleDelete: [rule: types.AutoModerationRule];
   autoModerationActionExecution: [event: types.AutoModerationActionExecutionEvent];
+  guildEmojisUpdate: [event: types.GuildEmojisUpdateEvent];
+  guildStickersUpdate: [event: types.GuildStickersUpdateEvent];
+  guildIntegrationsUpdate: [event: types.GuildIntegrationsUpdateEvent];
+  integrationCreate: [event: types.IntegrationCreateEvent];
+  integrationUpdate: [event: types.IntegrationUpdateEvent];
+  integrationDelete: [event: types.IntegrationDeleteEvent];
+  guildScheduledEventCreate: [event: types.GuildScheduledEvent];
+  guildScheduledEventUpdate: [event: types.GuildScheduledEvent];
+  guildScheduledEventDelete: [event: types.GuildScheduledEvent];
+  guildScheduledEventUserAdd: [event: types.GuildScheduledEventUserEvent];
+  guildScheduledEventUserRemove: [event: types.GuildScheduledEventUserEvent];
+  inviteCreate: [event: types.InviteCreateEvent];
+  inviteDelete: [event: types.InviteDeleteEvent];
   entitlementCreate: [entitlement: types.Entitlement];
   entitlementUpdate: [entitlement: types.Entitlement];
   entitlementDelete: [entitlement: types.Entitlement];

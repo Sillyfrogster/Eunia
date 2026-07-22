@@ -2,6 +2,7 @@ export { Client } from "./client";
 export type {
   ClientEventMap,
   ClientState,
+  GuildBanInfo,
   GuildDeleteInfo,
   GuildMemberRemoveInfo,
   MessageDeleteBulkInfo,

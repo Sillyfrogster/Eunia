@@ -8,7 +8,12 @@ import {
   AutoModerationRuleTriggerType,
   ChannelType,
   EntitlementType,
+  GuildScheduledEventEntityType,
+  GuildScheduledEventPrivacyLevel,
+  GuildScheduledEventStatus,
   PermissionFlags,
+  StickerFormatType,
+  StickerType,
   SubscriptionStatus,
 } from "@eunia/types";
 import type * as types from "@eunia/types";
@@ -385,6 +390,151 @@ describe("dispatch routing", () => {
       `subscription-create:${subscriptionData.id}`,
       `subscription-update:${subscriptionData.id}`,
       `subscription-delete:${subscriptionData.id}`,
+    ]);
+  });
+
+  test("emits guild ban and expression events after updating the cache", () => {
+    const { client } = makeClient();
+    routeDispatch(client, client.context, "GUILD_CREATE", guild());
+
+    const received: string[] = [];
+    client.on("guildBanAdd", (info) => {
+      received.push(`ban-add:${info.guildId}:${info.user.id}`);
+    });
+    client.on("guildBanRemove", (info) => {
+      received.push(`ban-remove:${info.guildId}:${info.user.id}`);
+    });
+    client.on("guildEmojisUpdate", (event) => {
+      received.push(`emojis:${event.emojis.length}`);
+    });
+    client.on("guildStickersUpdate", (event) => {
+      received.push(`stickers:${event.stickers.length}`);
+    });
+
+    const ban = { guild_id: GUILD_ID, user: user() } satisfies types.GuildBanEvent;
+    const emojis = [{ id: "888888888888888888", name: "wave" }];
+    const stickers: types.Sticker[] = [{
+      id: "999999999999999999",
+      name: "hello",
+      description: null,
+      tags: "wave",
+      type: StickerType.Guild,
+      format_type: StickerFormatType.PNG,
+      guild_id: GUILD_ID,
+    }];
+    routeDispatch(client, client.context, "GUILD_BAN_ADD", ban);
+    routeDispatch(client, client.context, "GUILD_BAN_REMOVE", ban);
+    routeDispatch(client, client.context, "GUILD_EMOJIS_UPDATE", {
+      guild_id: GUILD_ID,
+      emojis,
+    } satisfies types.GuildEmojisUpdateEvent);
+    routeDispatch(client, client.context, "GUILD_STICKERS_UPDATE", {
+      guild_id: GUILD_ID,
+      stickers,
+    } satisfies types.GuildStickersUpdateEvent);
+
+    expect(received).toEqual([
+      `ban-add:${GUILD_ID}:${USER_ID}`,
+      `ban-remove:${GUILD_ID}:${USER_ID}`,
+      "emojis:1",
+      "stickers:1",
+    ]);
+    expect(client.cache.users.resolve(USER_ID)).toEqual(ban.user);
+    expect(client.cache.guilds.resolve(GUILD_ID)?.emojis).toEqual(emojis);
+    expect(client.cache.guilds.resolve(GUILD_ID)?.stickers).toEqual(stickers);
+  });
+
+  test("emits integration, scheduled event, and invite events", () => {
+    const { client } = makeClient();
+    const received: string[] = [];
+    client.on("guildIntegrationsUpdate", (event) => {
+      received.push(`integrations:${event.guild_id}`);
+    });
+    client.on("integrationCreate", (event) => received.push(`integration-create:${event.id}`));
+    client.on("integrationUpdate", (event) => received.push(`integration-update:${event.id}`));
+    client.on("integrationDelete", (event) => received.push(`integration-delete:${event.id}`));
+    client.on("guildScheduledEventCreate", (event) => received.push(`event-create:${event.id}`));
+    client.on("guildScheduledEventUpdate", (event) => received.push(`event-update:${event.id}`));
+    client.on("guildScheduledEventDelete", (event) => received.push(`event-delete:${event.id}`));
+    client.on("guildScheduledEventUserAdd", (event) => received.push(`event-user-add:${event.user_id}`));
+    client.on("guildScheduledEventUserRemove", (event) => {
+      received.push(`event-user-remove:${event.user_id}`);
+    });
+    client.on("inviteCreate", (event) => received.push(`invite-create:${event.code}`));
+    client.on("inviteDelete", (event) => received.push(`invite-delete:${event.code}`));
+
+    const integration = {
+      id: "333333333333333333",
+      guild_id: GUILD_ID,
+      name: "Twitch",
+      type: "twitch",
+      enabled: true,
+      account: { id: USER_ID, name: "streamer" },
+    } satisfies types.IntegrationCreateEvent;
+    const integrationDelete = {
+      id: integration.id,
+      guild_id: GUILD_ID,
+    } satisfies types.IntegrationDeleteEvent;
+    const scheduledEvent = {
+      id: "444444444444444444",
+      guild_id: GUILD_ID,
+      name: "Town hall",
+      scheduled_start_time: "2026-08-01T00:00:00.000Z",
+      privacy_level: GuildScheduledEventPrivacyLevel.GuildOnly,
+      status: GuildScheduledEventStatus.Scheduled,
+      entity_id: null,
+      recurrence_rule: null,
+      entity_type: GuildScheduledEventEntityType.Voice,
+      channel_id: CHANNEL_ID,
+      entity_metadata: null,
+      scheduled_end_time: null,
+    } satisfies types.GuildScheduledEvent;
+    const scheduledEventUser = {
+      guild_scheduled_event_id: scheduledEvent.id,
+      user_id: USER_ID,
+      guild_id: GUILD_ID,
+    } satisfies types.GuildScheduledEventUserEvent;
+    const inviteCreate = {
+      channel_id: CHANNEL_ID,
+      guild_id: GUILD_ID,
+      code: "eunia",
+      uses: 0,
+      max_uses: 10,
+      max_age: 3600,
+      temporary: false,
+      created_at: "2026-07-22T00:00:00.000Z",
+    } satisfies types.InviteCreateEvent;
+
+    routeDispatch(client, client.context, "GUILD_INTEGRATIONS_UPDATE", {
+      guild_id: GUILD_ID,
+    });
+    routeDispatch(client, client.context, "INTEGRATION_CREATE", integration);
+    routeDispatch(client, client.context, "INTEGRATION_UPDATE", integration);
+    routeDispatch(client, client.context, "INTEGRATION_DELETE", integrationDelete);
+    routeDispatch(client, client.context, "GUILD_SCHEDULED_EVENT_CREATE", scheduledEvent);
+    routeDispatch(client, client.context, "GUILD_SCHEDULED_EVENT_UPDATE", scheduledEvent);
+    routeDispatch(client, client.context, "GUILD_SCHEDULED_EVENT_DELETE", scheduledEvent);
+    routeDispatch(client, client.context, "GUILD_SCHEDULED_EVENT_USER_ADD", scheduledEventUser);
+    routeDispatch(client, client.context, "GUILD_SCHEDULED_EVENT_USER_REMOVE", scheduledEventUser);
+    routeDispatch(client, client.context, "INVITE_CREATE", inviteCreate);
+    routeDispatch(client, client.context, "INVITE_DELETE", {
+      channel_id: CHANNEL_ID,
+      guild_id: GUILD_ID,
+      code: inviteCreate.code,
+    } satisfies types.InviteDeleteEvent);
+
+    expect(received).toEqual([
+      `integrations:${GUILD_ID}`,
+      `integration-create:${integration.id}`,
+      `integration-update:${integration.id}`,
+      `integration-delete:${integration.id}`,
+      `event-create:${scheduledEvent.id}`,
+      `event-update:${scheduledEvent.id}`,
+      `event-delete:${scheduledEvent.id}`,
+      `event-user-add:${USER_ID}`,
+      `event-user-remove:${USER_ID}`,
+      `invite-create:${inviteCreate.code}`,
+      `invite-delete:${inviteCreate.code}`,
     ]);
   });
 });

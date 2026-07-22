@@ -106,6 +106,8 @@ client.on("messageCreate", (message) => {
 | `guildMemberAdd` | `member` |
 | `guildMemberUpdate` | `member`, `previous?` |
 | `guildMemberRemove` | `GuildMemberRemoveInfo` |
+| `guildBanAdd` | `GuildBanInfo` |
+| `guildBanRemove` | `GuildBanInfo` |
 | `roleCreate` | `role` |
 | `roleUpdate` | `role`, `previous?` |
 | `roleDelete` | `RoleDeleteInfo` |
@@ -114,6 +116,19 @@ client.on("messageCreate", (message) => {
 | `autoModerationRuleUpdate` | `rule` |
 | `autoModerationRuleDelete` | `rule` |
 | `autoModerationActionExecution` | `event` |
+| `guildEmojisUpdate` | `event` |
+| `guildStickersUpdate` | `event` |
+| `guildIntegrationsUpdate` | `event` |
+| `integrationCreate` | `event` |
+| `integrationUpdate` | `event` |
+| `integrationDelete` | `event` |
+| `guildScheduledEventCreate` | `event` |
+| `guildScheduledEventUpdate` | `event` |
+| `guildScheduledEventDelete` | `event` |
+| `guildScheduledEventUserAdd` | `event` |
+| `guildScheduledEventUserRemove` | `event` |
+| `inviteCreate` | `event` |
+| `inviteDelete` | `event` |
 | `entitlementCreate` | `entitlement` |
 | `entitlementUpdate` | `entitlement` |
 | `entitlementDelete` | `entitlement` |
