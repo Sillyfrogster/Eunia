@@ -554,8 +554,8 @@ describe("Message", () => {
     await structure.edit("edited");
     await structure.react("party:123");
     await structure.removeOwnReaction("✅");
-    await structure.pin();
-    await structure.unpin();
+    await structure.pin({ reason: "Keep this handy" });
+    await structure.unpin({ reason: "No longer needed" });
     await structure.delete();
 
     expect(rest.calls[0]?.body).toEqual({
@@ -569,7 +569,9 @@ describe("Message", () => {
     expect(rest.calls[2]?.path).toContain("party%3A123");
     expect(rest.calls[3]?.path).toContain("%E2%9C%85");
     expect(rest.calls[4]?.method).toBe("PUT");
+    expect(rest.calls[4]?.options).toEqual({ reason: "Keep this handy" });
     expect(rest.calls[5]?.method).toBe("DELETE");
+    expect(rest.calls[5]?.options).toEqual({ reason: "No longer needed" });
     expect(context.cache.messages.resolve(MESSAGE_ID)).toBeUndefined();
   });
 });

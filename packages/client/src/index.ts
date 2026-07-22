@@ -16,6 +16,11 @@ export {
   type IntentInput,
 } from "./options";
 export { ServiceRegistry, type ServiceKey } from "./services";
+export type {
+  ChannelPin,
+  ChannelPinPage,
+  ListPinsOptions,
+} from "./domains/pins";
 
 export {
   Command,

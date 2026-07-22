@@ -294,6 +294,59 @@ describe("domain accessors", () => {
     expect(refreshed.username).toBe("new");
     expect(client.users.peek("42")?.username).toBe("new");
   });
+
+  test("lists current channel pins and hydrates their messages", async () => {
+    const pinned = message({ pinned: true });
+    const { client, calls } = makeClient([
+      () => json({
+        items: [{ pinned_at: "2026-07-20T12:00:00.000Z", message: pinned }],
+        has_more: true,
+      }),
+    ]);
+
+    const page = await client.pins.list(CHANNEL_ID, {
+      before: new Date("2026-07-21T12:00:00.000Z"),
+      limit: 25,
+    });
+
+    expect(page.hasMore).toBe(true);
+    expect(page.items[0]?.message).toBeInstanceOf(Message);
+    expect(page.items[0]?.pinnedAt).toEqual(new Date("2026-07-20T12:00:00.000Z"));
+    expect(client.cache.messages.resolve(MESSAGE_ID)).toEqual(pinned);
+    expect(calls[0]?.url).toContain(`/channels/${CHANNEL_ID}/messages/pins`);
+    expect(calls[0]?.url).toContain("limit=25");
+    expect(calls[0]?.url).toContain("before=2026-07-21T12%3A00%3A00.000Z");
+  });
+
+  test("pins and unpins with audit log reasons", async () => {
+    const { client, calls } = makeClient([
+      () => new Response(null, { status: 204 }),
+      () => new Response(null, { status: 204 }),
+    ]);
+    client.cache.messages.set(MESSAGE_ID, message());
+
+    await client.pins.add(CHANNEL_ID, MESSAGE_ID, { reason: "Keep this handy" });
+    expect(client.cache.messages.resolve(MESSAGE_ID)?.pinned).toBe(true);
+    await client.pins.remove(CHANNEL_ID, MESSAGE_ID, { reason: "No longer needed" });
+
+    expect(calls[0]?.url).toContain(
+      `/channels/${CHANNEL_ID}/messages/pins/${MESSAGE_ID}`,
+    );
+    expect(new Headers(calls[0]?.init.headers).get("X-Audit-Log-Reason")).toBe(
+      "Keep%20this%20handy",
+    );
+    expect(calls[1]?.init.method).toBe("DELETE");
+    expect(client.cache.messages.resolve(MESSAGE_ID)?.pinned).toBe(false);
+  });
+
+  test("rejects pin page limits outside Discord's range", async () => {
+    const { client, calls } = makeClient();
+
+    await expect(client.pins.list(CHANNEL_ID, { limit: 51 })).rejects.toThrow(
+      /between 1 and 50/,
+    );
+    expect(calls).toHaveLength(0);
+  });
 });
 
 describe("extension helpers", () => {
