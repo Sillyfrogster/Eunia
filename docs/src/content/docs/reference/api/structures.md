@@ -49,8 +49,8 @@ Properties: `author`, `content`, `channelId`, `guildId`, `editedAt`, cached `cha
 | `delete()` | `Promise<void>` |
 | `react(emoji)` | `Promise<void>` |
 | `removeOwnReaction(emoji)` | `Promise<void>` |
-| `pin()` | `Promise<void>` |
-| `unpin()` | `Promise<void>` |
+| `pin(audit?)` | `Promise<void>` |
+| `unpin(audit?)` | `Promise<void>` |
 
 ## Guild
 
