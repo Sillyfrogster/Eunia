@@ -27,7 +27,7 @@ to call a route with `client.rest` does not mean Eunia implements that feature.
 | Prefix commands | Built in | Uses the same command tree and parses common option types |
 | Buttons, selects, and modals | Built in | Includes listeners tied to a command and stable custom IDs |
 | Interaction delivery | Partly built in | Interactions received through the Gateway can be answered; Eunia cannot receive interactions sent over HTTP |
-| Messages and polls | Partly built in | Sending, editing, deleting, replying, files, reactions, and polls work; history, search, crossposting, bulk deletion, and voter lists do not |
+| Messages and polls | Partly built in | Sending, editing, deleting, replying, history pagination, files, reactions, and polls work; search, crossposting, bulk deletion, and voter lists do not |
 | Pins | Built in | Lists pins, pages through results, pins and unpins messages, records reasons, and updates the cache |
 | Channels and guild administration | Partly built in | Common channel, member, role, ban, timeout, and permission tasks work; many Discord routes do not have Eunia methods |
 | Threads, forums, and media channels | Data only | Channel and event data is typed; creating and managing threads and posts is not built in |

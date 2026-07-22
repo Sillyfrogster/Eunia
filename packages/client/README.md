@@ -45,6 +45,7 @@ synchronously (`undefined` means not cached, never "doesn't exist"), and
 ```ts
 const user = client.users.peek(userId) ?? await client.users.get(userId);
 const fresh = await client.messages.pull(channelId, messageId);
+const history = await client.messages.list(channelId, { before: messageId, limit: 100 });
 
 await client.messages.send(channelId, "Hello");
 await client.reactions.add(channelId, messageId, "✅");

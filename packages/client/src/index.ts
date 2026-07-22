@@ -20,6 +20,9 @@ export {
 } from "./options";
 export { ServiceRegistry, type ServiceKey } from "./services";
 export type {
+  ListMessagesOptions,
+} from "./domains/messages";
+export type {
   ChannelPin,
   ChannelPinPage,
   ListPinsOptions,

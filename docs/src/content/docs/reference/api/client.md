@@ -73,7 +73,7 @@ The client exposes resource operations without requiring a structure instance.
 | `users` | `get(id)`, `peek(id)`, `pull(id)` |
 | `guilds` | `get(id)`, `peek(id)`, `pull(id)` |
 | `channels` | `get(id)`, `peek(id)`, `pull(id)`, `edit(id, input, audit?)`, `delete(id, audit?)`, `typing(id)` |
-| `messages` | `get(channelId, messageId)`, `peek(...)`, `pull(...)`, `send(channelId, input)`, `edit(...)`, `delete(...)` |
+| `messages` | `get(channelId, messageId)`, `peek(...)`, `pull(...)`, `list(channelId, options?)`, `send(channelId, input)`, `edit(...)`, `delete(...)` |
 | `members` | `get(guildId, userId)`, `peek(...)`, `pull(...)`, `edit(...)`, `kick(...)`, `ban(...)`, `unban(...)`, `addRole(...)`, `removeRole(...)` |
 | `roles` | `get(guildId, roleId)`, `peek(...)`, `pull(...)`, `list(guildId)`, `create(...)`, `edit(...)`, `delete(...)` |
 | `reactions` | `add(channelId, messageId, emoji)`, `remove(...)`, `clear(...)` |
