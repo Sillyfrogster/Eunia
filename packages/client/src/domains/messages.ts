@@ -1,4 +1,4 @@
-import { routePath } from "@eunia/rest";
+import { routePath, withQuery } from "@eunia/rest";
 import {
   Message,
   normalizeSendable,
@@ -8,6 +8,18 @@ import {
 } from "@eunia/structures";
 import type * as types from "@eunia/types";
 import { requireId } from "./cached";
+
+interface MessageListLimit {
+  limit?: number;
+}
+
+export type ListMessagesOptions = MessageListLimit &
+  (
+    | { before: string; after?: never; around?: never }
+    | { after: string; before?: never; around?: never }
+    | { around: string; before?: never; after?: never }
+    | { before?: never; after?: never; around?: never }
+  );
 
 /** Message cache accessors and REST operations. */
 export class MessagesDomain {
@@ -35,6 +47,29 @@ export class MessagesDomain {
     );
     this.cacheMessage(raw);
     return new Message(raw, this.ctx);
+  }
+
+  async list(
+    channelId: string,
+    options: ListMessagesOptions = {},
+  ): Promise<Message[]> {
+    requireId(channelId);
+    validateListOptions(options);
+    const payload = await this.ctx.rest.get<types.Message[]>(
+      withQuery(
+        routePath("/channels/{channelId}/messages", { channelId }),
+        {
+          before: options.before,
+          after: options.after,
+          around: options.around,
+          limit: options.limit,
+        },
+      ),
+    );
+    return payload.map((raw) => {
+      this.cacheMessage(raw);
+      return new Message(raw, this.ctx);
+    });
   }
 
   async send(channelId: string, input: Sendable): Promise<Message> {
@@ -72,5 +107,21 @@ export class MessagesDomain {
   private cacheMessage(raw: types.Message): void {
     this.ctx.cache.messages.set(raw.id, raw);
     this.ctx.cache.users.set(raw.author.id, raw.author);
+  }
+}
+
+function validateListOptions(options: ListMessagesOptions): void {
+  const anchors = [options.before, options.after, options.around].filter(
+    (value): value is string => value !== undefined,
+  );
+  if (anchors.length > 1) {
+    throw new TypeError("Message list accepts only one of before, after, or around.");
+  }
+  if (anchors.length === 1) requireId(anchors[0] ?? "");
+  if (
+    options.limit !== undefined &&
+    (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 100)
+  ) {
+    throw new RangeError("Message list limit must be between 1 and 100.");
   }
 }
