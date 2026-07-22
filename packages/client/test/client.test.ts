@@ -2,7 +2,15 @@ import { describe, expect, test } from "bun:test";
 import { Intents } from "@eunia/gateway";
 import { GatewayOpcode } from "@eunia/gateway";
 import { SilentLogger } from "@eunia/shared";
-import { ChannelType, PermissionFlags } from "@eunia/types";
+import {
+  AutoModerationActionType,
+  AutoModerationRuleEventType,
+  AutoModerationRuleTriggerType,
+  ChannelType,
+  EntitlementType,
+  PermissionFlags,
+  SubscriptionStatus,
+} from "@eunia/types";
 import type * as types from "@eunia/types";
 import { Guild, Message, User } from "@eunia/structures";
 import { Client } from "../src/client";
@@ -138,6 +146,47 @@ function message(overrides: Partial<types.Message> = {}): types.Message {
   };
 }
 
+function autoModerationRule(): types.AutoModerationRule {
+  return {
+    id: "333333333333333333",
+    guild_id: GUILD_ID,
+    name: "Block spam",
+    creator_id: USER_ID,
+    event_type: AutoModerationRuleEventType.MessageSend,
+    trigger_type: AutoModerationRuleTriggerType.Spam,
+    trigger_metadata: {},
+    actions: [{ type: AutoModerationActionType.BlockMessage }],
+    enabled: true,
+    exempt_roles: [],
+    exempt_channels: [],
+  };
+}
+
+function entitlement(): types.Entitlement {
+  return {
+    id: "444444444444444444",
+    sku_id: "555555555555555555",
+    application_id: "666666666666666666",
+    user_id: USER_ID,
+    type: EntitlementType.ApplicationSubscription,
+    deleted: false,
+  };
+}
+
+function subscription(): types.Subscription {
+  return {
+    id: "777777777777777777",
+    user_id: USER_ID,
+    sku_ids: ["555555555555555555"],
+    entitlement_ids: ["444444444444444444"],
+    renewal_sku_ids: null,
+    current_period_start: "2026-07-01T00:00:00.000Z",
+    current_period_end: "2026-08-01T00:00:00.000Z",
+    status: SubscriptionStatus.Active,
+    canceled_at: null,
+  };
+}
+
 describe("resolveIntents", () => {
   test("accepts a bitfield or an array", () => {
     expect(resolveIntents(Intents.Guilds)).toBe(Intents.Guilds);
@@ -264,6 +313,79 @@ describe("dispatch routing", () => {
       guild_id: GUILD_ID,
     });
     expect(client.cache.messages.resolve(MESSAGE_ID)).toBeUndefined();
+  });
+
+  test("emits typed Auto Moderation events", () => {
+    const { client } = makeClient();
+    const received: string[] = [];
+    client.on("autoModerationRuleCreate", (rule) => received.push(`create:${rule.id}`));
+    client.on("autoModerationRuleUpdate", (rule) => received.push(`update:${rule.id}`));
+    client.on("autoModerationRuleDelete", (rule) => received.push(`delete:${rule.id}`));
+    client.on("autoModerationActionExecution", (event) => {
+      received.push(`execute:${event.rule_id}`);
+    });
+
+    const rule = autoModerationRule();
+    routeDispatch(client, client.context, "AUTO_MODERATION_RULE_CREATE", rule);
+    routeDispatch(client, client.context, "AUTO_MODERATION_RULE_UPDATE", rule);
+    routeDispatch(client, client.context, "AUTO_MODERATION_RULE_DELETE", rule);
+    routeDispatch(client, client.context, "AUTO_MODERATION_ACTION_EXECUTION", {
+      guild_id: GUILD_ID,
+      action: { type: AutoModerationActionType.BlockMessage },
+      rule_id: rule.id,
+      rule_trigger_type: rule.trigger_type,
+      user_id: USER_ID,
+      content: "spam",
+      matched_content: "spam",
+    } satisfies types.AutoModerationActionExecutionEvent);
+
+    expect(received).toEqual([
+      `create:${rule.id}`,
+      `update:${rule.id}`,
+      `delete:${rule.id}`,
+      `execute:${rule.id}`,
+    ]);
+  });
+
+  test("emits typed entitlement and subscription events", () => {
+    const { client } = makeClient();
+    const received: string[] = [];
+    client.on("entitlementCreate", (value) => {
+      received.push(`entitlement-create:${value.id}`);
+    });
+    client.on("entitlementUpdate", (value) => {
+      received.push(`entitlement-update:${value.id}`);
+    });
+    client.on("entitlementDelete", (value) => {
+      received.push(`entitlement-delete:${value.id}`);
+    });
+    client.on("subscriptionCreate", (value) => {
+      received.push(`subscription-create:${value.id}`);
+    });
+    client.on("subscriptionUpdate", (value) => {
+      received.push(`subscription-update:${value.id}`);
+    });
+    client.on("subscriptionDelete", (value) => {
+      received.push(`subscription-delete:${value.id}`);
+    });
+
+    const entitlementData = entitlement();
+    const subscriptionData = subscription();
+    routeDispatch(client, client.context, "ENTITLEMENT_CREATE", entitlementData);
+    routeDispatch(client, client.context, "ENTITLEMENT_UPDATE", entitlementData);
+    routeDispatch(client, client.context, "ENTITLEMENT_DELETE", entitlementData);
+    routeDispatch(client, client.context, "SUBSCRIPTION_CREATE", subscriptionData);
+    routeDispatch(client, client.context, "SUBSCRIPTION_UPDATE", subscriptionData);
+    routeDispatch(client, client.context, "SUBSCRIPTION_DELETE", subscriptionData);
+
+    expect(received).toEqual([
+      `entitlement-create:${entitlementData.id}`,
+      `entitlement-update:${entitlementData.id}`,
+      `entitlement-delete:${entitlementData.id}`,
+      `subscription-create:${subscriptionData.id}`,
+      `subscription-update:${subscriptionData.id}`,
+      `subscription-delete:${subscriptionData.id}`,
+    ]);
   });
 });
 

@@ -1,5 +1,6 @@
 import type { StructureContext } from "@eunia/structures";
 import type { Client } from "../client";
+import { applicationHandlers } from "./applications";
 import { channelHandlers } from "./channels";
 import { guildHandlers } from "./guilds";
 import { interactionHandlers } from "./interactions";
@@ -9,6 +10,7 @@ import type { DispatchHandler } from "./types";
 
 const handlers: Readonly<Record<string, DispatchHandler>> = {
   ...lifecycleHandlers,
+  ...applicationHandlers,
   ...guildHandlers,
   ...channelHandlers,
   ...messageHandlers,

@@ -110,6 +110,16 @@ client.on("messageCreate", (message) => {
 | `roleUpdate` | `role`, `previous?` |
 | `roleDelete` | `RoleDeleteInfo` |
 | `interactionCreate` | `interaction` |
+| `autoModerationRuleCreate` | `rule` |
+| `autoModerationRuleUpdate` | `rule` |
+| `autoModerationRuleDelete` | `rule` |
+| `autoModerationActionExecution` | `event` |
+| `entitlementCreate` | `entitlement` |
+| `entitlementUpdate` | `entitlement` |
+| `entitlementDelete` | `entitlement` |
+| `subscriptionCreate` | `subscription` |
+| `subscriptionUpdate` | `subscription` |
+| `subscriptionDelete` | `subscription` |
 | `dispatch` | `eventName`, `data`, `shardId` |
 | `shardReconnecting` | `shardId`, `ReconnectInfo` |
 | `shardResumed` | `shardId` |
