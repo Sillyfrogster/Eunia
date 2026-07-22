@@ -12,6 +12,8 @@ import {
   GuildScheduledEventPrivacyLevel,
   GuildScheduledEventStatus,
   PermissionFlags,
+  PollLayoutType,
+  ReactionType,
   StickerFormatType,
   StickerType,
   SubscriptionStatus,
@@ -535,6 +537,212 @@ describe("dispatch routing", () => {
       `event-user-remove:${USER_ID}`,
       `invite-create:${inviteCreate.code}`,
       `invite-delete:${inviteCreate.code}`,
+    ]);
+  });
+
+  test("updates cached reactions and poll votes before emitting events", () => {
+    const { client } = makeClient();
+    routeDispatch(client, client.context, "READY", {
+      v: 10,
+      user: user({ bot: true }),
+      session_id: "session",
+      resume_gateway_url: "wss://gateway.test",
+      guilds: [],
+      application: { id: "888888888888888888", flags: 0 },
+    } satisfies types.ReadyEvent);
+    routeDispatch(client, client.context, "MESSAGE_CREATE", message({
+      poll: {
+        question: { text: "Ship it?" },
+        answers: [{ answer_id: 1, poll_media: { text: "Yes" } }],
+        expiry: null,
+        allow_multiselect: false,
+        layout_type: PollLayoutType.Default,
+        results: {
+          is_finalized: false,
+          answer_counts: [{ id: 1, count: 0, me_voted: false }],
+        },
+      },
+    }));
+
+    const received: string[] = [];
+    client.on("messageReactionAdd", () => received.push("reaction-add"));
+    client.on("messageReactionRemove", () => received.push("reaction-remove"));
+    client.on("messageReactionRemoveEmoji", () => received.push("reaction-remove-emoji"));
+    client.on("messageReactionRemoveAll", () => received.push("reaction-remove-all"));
+    client.on("messagePollVoteAdd", () => received.push("poll-add"));
+    client.on("messagePollVoteRemove", () => received.push("poll-remove"));
+
+    const reactionAdd = {
+      user_id: USER_ID,
+      channel_id: CHANNEL_ID,
+      message_id: MESSAGE_ID,
+      guild_id: GUILD_ID,
+      emoji: { id: null, name: "✅" },
+      burst: false,
+      type: ReactionType.Normal,
+    } satisfies types.MessageReactionAddEvent;
+    const reactionRemove = {
+      user_id: USER_ID,
+      channel_id: CHANNEL_ID,
+      message_id: MESSAGE_ID,
+      guild_id: GUILD_ID,
+      emoji: reactionAdd.emoji,
+      burst: false,
+      type: ReactionType.Normal,
+    } satisfies types.MessageReactionRemoveEvent;
+    const vote = {
+      user_id: USER_ID,
+      channel_id: CHANNEL_ID,
+      message_id: MESSAGE_ID,
+      guild_id: GUILD_ID,
+      answer_id: 1,
+    } satisfies types.MessagePollVoteEvent;
+
+    routeDispatch(client, client.context, "MESSAGE_REACTION_ADD", reactionAdd);
+    expect(client.cache.messages.resolve(MESSAGE_ID)?.reactions?.[0]).toMatchObject({
+      count: 1,
+      me: true,
+    });
+    routeDispatch(client, client.context, "MESSAGE_REACTION_REMOVE", reactionRemove);
+    routeDispatch(client, client.context, "MESSAGE_REACTION_ADD", reactionAdd);
+    routeDispatch(client, client.context, "MESSAGE_REACTION_REMOVE_EMOJI", {
+      channel_id: CHANNEL_ID,
+      message_id: MESSAGE_ID,
+      guild_id: GUILD_ID,
+      emoji: reactionAdd.emoji,
+    } satisfies types.MessageReactionRemoveEmojiEvent);
+    routeDispatch(client, client.context, "MESSAGE_REACTION_ADD", reactionAdd);
+    routeDispatch(client, client.context, "MESSAGE_REACTION_REMOVE_ALL", {
+      channel_id: CHANNEL_ID,
+      message_id: MESSAGE_ID,
+      guild_id: GUILD_ID,
+    } satisfies types.MessageReactionRemoveAllEvent);
+    routeDispatch(client, client.context, "MESSAGE_POLL_VOTE_ADD", vote);
+    expect(
+      client.cache.messages.resolve(MESSAGE_ID)?.poll?.results?.answer_counts[0],
+    ).toEqual({ id: 1, count: 1, me_voted: true });
+    routeDispatch(client, client.context, "MESSAGE_POLL_VOTE_REMOVE", vote);
+
+    expect(client.cache.messages.resolve(MESSAGE_ID)?.reactions).toEqual([]);
+    expect(
+      client.cache.messages.resolve(MESSAGE_ID)?.poll?.results?.answer_counts[0],
+    ).toEqual({ id: 1, count: 0, me_voted: false });
+    expect(received).toEqual([
+      "reaction-add",
+      "reaction-remove",
+      "reaction-add",
+      "reaction-remove-emoji",
+      "reaction-add",
+      "reaction-remove-all",
+      "poll-add",
+      "poll-remove",
+    ]);
+  });
+
+  test("hydrates thread events and keeps cached thread state current", () => {
+    const { client } = makeClient();
+    const received: string[] = [];
+    client.on("threadCreate", (thread) => received.push(`create:${thread.name}`));
+    client.on("threadUpdate", (thread, previous) => {
+      received.push(`update:${previous?.name}:${thread.name}`);
+    });
+    client.on("threadListSync", (event) => received.push(`sync:${event.threads.length}`));
+    client.on("threadMemberUpdate", (event) => received.push(`member:${event.user_id}`));
+    client.on("threadMembersUpdate", (event) => received.push(`members:${event.member_count}`));
+    client.on("channelPinsUpdate", (event) => received.push(`pins:${event.channel_id}`));
+    client.on("threadDelete", (info) => received.push(`delete:${info.thread?.name}`));
+
+    const thread = {
+      id: "333333333333333333",
+      guild_id: GUILD_ID,
+      parent_id: CHANNEL_ID,
+      type: ChannelType.PublicThread,
+      name: "Planning",
+    } satisfies types.ThreadCreateEvent;
+    const threadMember = {
+      id: thread.id,
+      user_id: USER_ID,
+      guild_id: GUILD_ID,
+      join_timestamp: "2026-07-22T00:00:00.000Z",
+      flags: 0,
+    } satisfies types.ThreadMemberUpdateEvent;
+
+    routeDispatch(client, client.context, "THREAD_CREATE", thread);
+    routeDispatch(client, client.context, "THREAD_UPDATE", {
+      ...thread,
+      name: "Release planning",
+    });
+    routeDispatch(client, client.context, "THREAD_LIST_SYNC", {
+      guild_id: GUILD_ID,
+      threads: [{ ...thread, name: "Release planning" }],
+      members: [threadMember],
+    } satisfies types.ThreadListSyncEvent);
+    routeDispatch(client, client.context, "THREAD_MEMBER_UPDATE", threadMember);
+    routeDispatch(client, client.context, "THREAD_MEMBERS_UPDATE", {
+      id: thread.id,
+      guild_id: GUILD_ID,
+      member_count: 4,
+    } satisfies types.ThreadMembersUpdateEvent);
+    routeDispatch(client, client.context, "CHANNEL_PINS_UPDATE", {
+      guild_id: GUILD_ID,
+      channel_id: thread.id,
+      last_pin_timestamp: "2026-07-22T12:00:00.000Z",
+    } satisfies types.ChannelPinsUpdateEvent);
+    routeDispatch(client, client.context, "THREAD_DELETE", {
+      id: thread.id,
+      guild_id: GUILD_ID,
+      parent_id: CHANNEL_ID,
+      type: ChannelType.PublicThread,
+    } satisfies types.ThreadDeleteEvent);
+
+    expect(received).toEqual([
+      "create:Planning",
+      "update:Planning:Release planning",
+      "sync:1",
+      `member:${USER_ID}`,
+      "members:4",
+      `pins:${thread.id}`,
+      "delete:Release planning",
+    ]);
+    expect(client.cache.channels.resolve(thread.id)).toBeUndefined();
+  });
+
+  test("emits presence, typing, and webhook events after cache updates", () => {
+    const { client } = makeClient();
+    client.cache.users.set(USER_ID, user());
+    const received: string[] = [];
+    client.on("presenceUpdate", (event) => {
+      received.push(`presence:${event.status}:${event.user.id}`);
+    });
+    client.on("typingStart", (event) => received.push(`typing:${event.user_id}`));
+    client.on("webhooksUpdate", (event) => received.push(`webhooks:${event.channel_id}`));
+
+    routeDispatch(client, client.context, "PRESENCE_UPDATE", {
+      user: { id: USER_ID, username: "renamed" },
+      guild_id: GUILD_ID,
+      status: "online",
+      activities: [],
+      client_status: { web: "online" },
+    } satisfies types.PresenceUpdateEvent);
+    expect(client.cache.users.resolve(USER_ID)?.username).toBe("renamed");
+    routeDispatch(client, client.context, "TYPING_START", {
+      channel_id: CHANNEL_ID,
+      guild_id: GUILD_ID,
+      user_id: USER_ID,
+      timestamp: 1_774_185_600,
+      member: member(),
+    } satisfies types.TypingStartEvent);
+    routeDispatch(client, client.context, "WEBHOOKS_UPDATE", {
+      guild_id: GUILD_ID,
+      channel_id: CHANNEL_ID,
+    } satisfies types.WebhooksUpdateEvent);
+
+    expect(client.cache.users.resolve(USER_ID)?.username).toBe("eunia-user");
+    expect(client.members.peek(GUILD_ID, USER_ID)).toBeDefined();
+    expect(received).toEqual([
+      `presence:online:${USER_ID}`,
+      `typing:${USER_ID}`,
+      `webhooks:${CHANNEL_ID}`,
     ]);
   });
 });
