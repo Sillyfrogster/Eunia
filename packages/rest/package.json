@@ -1,6 +1,6 @@
 {
   "name": "@eunia/rest",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "description": "Rate-limit-aware HTTP transport for Eunia",
   "type": "module",
