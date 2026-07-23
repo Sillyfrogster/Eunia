@@ -30,6 +30,7 @@ import {
   GUILD_ID,
   MESSAGE_ID,
   USER_ID,
+  commandInteraction,
   guild,
   json,
   makeClient,
@@ -95,6 +96,65 @@ describe("resolveIntents", () => {
 });
 
 describe("dispatch routing", () => {
+  test("automatically handles command sources by default", () => {
+    const { client } = makeClient();
+    let handled = 0;
+    client.commands.handle = async () => {
+      handled += 1;
+      return { status: "ignored" };
+    };
+
+    routeDispatch(client, client.context, "MESSAGE_CREATE", message());
+    routeDispatch(
+      client,
+      client.context,
+      "INTERACTION_CREATE",
+      commandInteraction(),
+    );
+
+    expect(handled).toBe(2);
+  });
+
+  test("can leave command dispatch to gateway event listeners", async () => {
+    const { client } = makeClient([], { autoHandle: false });
+    let handled = 0;
+    let messages = 0;
+    let interactions = 0;
+    let receivedMessage: Message | undefined;
+    client.commands.handle = async () => {
+      handled += 1;
+      return { status: "ignored" };
+    };
+    client.on("messageCreate", (message) => {
+      messages += 1;
+      receivedMessage = message;
+    });
+    client.on("interactionCreate", () => {
+      interactions += 1;
+    });
+
+    routeDispatch(client, client.context, "MESSAGE_CREATE", message());
+    routeDispatch(
+      client,
+      client.context,
+      "INTERACTION_CREATE",
+      commandInteraction(),
+    );
+
+    expect(handled).toBe(0);
+    expect(messages).toBe(1);
+    expect(interactions).toBe(1);
+
+    await client.handleCommand(receivedMessage!);
+    expect(handled).toBe(1);
+  });
+
+  test("rejects a non-boolean auto-handle setting", () => {
+    expect(() =>
+      makeClient([], { autoHandle: "yes" as never }),
+    ).toThrow(/autoHandle must be a boolean/);
+  });
+
   test("stores raw messages before emitting hydrated messages", () => {
     const { client } = makeClient();
     let received: Message | undefined;

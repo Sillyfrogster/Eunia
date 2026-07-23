@@ -4,11 +4,31 @@ import type {
   PermissionInput,
 } from "@eunia/types";
 import type * as types from "@eunia/types";
-import type { Interaction, Message, Sendable } from "@eunia/structures";
-import type { Channel, Role, User } from "@eunia/structures";
-import type { Command, CommandGroup } from "./command";
+import type {
+  Channel,
+  Interaction,
+  Message,
+  Role,
+  Sendable,
+  User,
+} from "@eunia/structures";
+import type {
+  AnyCommand,
+  ChatCommand,
+  CommandGroup,
+  CommandListenerMap,
+  CommandOptionMap,
+  MessageCommand,
+  PrefixCommand,
+  PrefixExposure,
+  UserCommand,
+} from "./command";
 import type { CommandError, CommandRejection } from "./errors";
 import type { OptionField } from "./fields";
+import type {
+  ListenerBuilders,
+  ListenerHandles,
+} from "./listeners";
 
 export type Awaitable<T> = T | Promise<T>;
 
@@ -38,22 +58,28 @@ export interface CommandGuardFailure {
 }
 
 export type CommandGuard = (
-  context: CommandContext | AutocompleteContext,
+  context: CommandAccessContext,
 ) => Awaitable<boolean | void | CommandGuardFailure>;
+
+export interface CommandAccess {
+  readonly guildOnly?: boolean;
+  readonly ownerOnly?: boolean;
+  readonly userPermissions?: PermissionInput;
+  readonly botPermissions?: PermissionInput;
+  readonly guards?: readonly CommandGuard[];
+}
 
 export type CommandMiddleware = (
   context: CommandContext,
   next: () => Promise<void>,
 ) => Awaitable<void>;
 
-/** Hydrates resolved option payloads into structures; an interaction satisfies it. */
 export interface ResolvedStructureSource {
   resolvedUser(id: string): User | undefined;
   resolvedChannel(id: string): Channel | undefined;
   resolvedRole(id: string): Role | undefined;
 }
 
-/** Structure fields are present only when the invocation carried resolved payloads. */
 export interface ResolvedUser {
   readonly id: string;
   readonly raw?: types.User;
@@ -91,6 +117,24 @@ export interface ResolvedAttachment {
   readonly raw?: types.Attachment;
 }
 
+export type ResolvedCommandOption =
+  | string
+  | number
+  | boolean
+  | ResolvedUser
+  | ResolvedChannel
+  | ResolvedRole
+  | ResolvedMentionable
+  | ResolvedAttachment;
+
+export type CommandOptionValues<O extends CommandOptionMap> = Readonly<{
+  [K in keyof O]: O[K] extends OptionField<infer V, infer R>
+    ? R extends true
+      ? V
+      : V | undefined
+    : never;
+}>;
+
 export interface CommandRest {
   put<T = unknown>(path: string, body?: unknown): Promise<T>;
 }
@@ -102,30 +146,25 @@ export interface CommandHost {
   readonly rest: CommandRest;
   reportCommandError(
     error: CommandError,
-    context?: CommandContext | AutocompleteContext,
+    context?: CommandErrorContext,
   ): Awaitable<void>;
 }
 
-export interface FocusedOption {
+export interface FocusedOption<
+  T extends string | number = string | number,
+> {
   readonly name: string;
   readonly type:
     | ApplicationCommandOptionType.String
     | ApplicationCommandOptionType.Integer
     | ApplicationCommandOptionType.Number;
-  readonly value: string | number;
+  readonly value: T;
 }
 
-/** Typed access to declared option fields: `ctx.get(this.sides)`. */
-export interface OptionAccess {
-  get<V, R extends boolean>(field: OptionField<V, R>): R extends true ? V : V | undefined;
-  has(field: OptionField<unknown, boolean>): boolean;
-}
-
-interface CommandContextBase extends OptionAccess {
-  readonly command: Command;
+interface InvocationContextBase {
+  readonly command: AnyCommand;
   readonly groups: readonly CommandGroup[];
   readonly path: readonly string[];
-  readonly host: CommandHost;
   readonly userId: string;
   readonly channelId?: string;
   readonly guildId?: string;
@@ -134,11 +173,53 @@ interface CommandContextBase extends OptionAccess {
   reply(input: Sendable): Promise<unknown>;
 }
 
-export interface SlashCommandContext extends CommandContextBase {
-  readonly kind: "slash";
-  readonly interaction: Interaction<"command">;
-  defer(options?: { readonly ephemeral?: boolean }): Promise<boolean>;
+interface OptionContext<
+  O extends CommandOptionMap,
+  L extends CommandListenerMap,
+> extends InvocationContextBase {
+  readonly options: CommandOptionValues<O>;
+  readonly listeners: ListenerHandles<L>;
 }
+
+interface InteractionCommandResponseContext {
+  defer(options?: { readonly ephemeral?: boolean }): Promise<boolean>;
+  modal(input: types.ModalInteractionResponseData): Promise<void>;
+}
+
+export interface SlashCommandContext<
+  O extends CommandOptionMap = CommandOptionMap,
+  L extends CommandListenerMap = CommandListenerMap,
+> extends OptionContext<O, L>, InteractionCommandResponseContext {
+  readonly kind: "slash";
+  readonly command: ChatCommand<O, L>;
+  readonly interaction: Interaction<"command">;
+}
+
+export interface PrefixCommandContext<
+  O extends CommandOptionMap = CommandOptionMap,
+  L extends CommandListenerMap = CommandListenerMap,
+  C extends
+    | ChatCommand<O, L>
+    | PrefixCommand<O, L> =
+    | ChatCommand<O, L>
+    | PrefixCommand<O, L>,
+> extends OptionContext<O, L> {
+  readonly kind: "prefix";
+  readonly command: C;
+  readonly message: Message;
+  readonly prefix: string;
+  reply(input: Sendable): Promise<Message>;
+}
+
+export type ChatCommandContext<
+  O extends CommandOptionMap,
+  L extends CommandListenerMap,
+  P extends PrefixExposure | undefined,
+> =
+  | SlashCommandContext<O, L>
+  | (P extends PrefixExposure
+      ? PrefixCommandContext<O, L, ChatCommand<O, L, P>>
+      : never);
 
 export interface UserCommandTarget {
   readonly id: string;
@@ -147,11 +228,15 @@ export interface UserCommandTarget {
   readonly member?: Readonly<Omit<types.GuildMember, "user" | "deaf" | "mute">>;
 }
 
-export interface UserCommandContext extends CommandContextBase {
+export interface UserCommandContext<
+  L extends CommandListenerMap = CommandListenerMap,
+> extends InvocationContextBase, InteractionCommandResponseContext {
   readonly kind: "user";
+  readonly command: UserCommand<L>;
+  readonly groups: readonly [];
+  readonly listeners: ListenerHandles<L>;
   readonly interaction: Interaction<"command">;
   readonly target: UserCommandTarget;
-  defer(options?: { readonly ephemeral?: boolean }): Promise<boolean>;
 }
 
 export interface MessageCommandTarget {
@@ -160,17 +245,15 @@ export interface MessageCommandTarget {
   readonly message?: Message;
 }
 
-export interface MessageCommandContext extends CommandContextBase {
+export interface MessageCommandContext<
+  L extends CommandListenerMap = CommandListenerMap,
+> extends InvocationContextBase, InteractionCommandResponseContext {
   readonly kind: "message";
+  readonly command: MessageCommand<L>;
+  readonly groups: readonly [];
+  readonly listeners: ListenerHandles<L>;
   readonly interaction: Interaction<"command">;
   readonly target: MessageCommandTarget;
-  defer(options?: { readonly ephemeral?: boolean }): Promise<boolean>;
-}
-
-export interface PrefixCommandContext extends CommandContextBase {
-  readonly kind: "prefix";
-  readonly message: Message;
-  readonly prefix: string;
 }
 
 export type CommandContext =
@@ -179,14 +262,17 @@ export type CommandContext =
   | UserCommandContext
   | MessageCommandContext;
 
-export interface AutocompleteContext extends OptionAccess {
+export interface AutocompleteContext<
+  T extends string | number = string | number,
+> {
   readonly kind: "autocomplete";
-  readonly command: Command;
+  readonly command: ChatCommand;
   readonly groups: readonly CommandGroup[];
   readonly path: readonly string[];
-  readonly host: CommandHost;
   readonly interaction: Interaction<"autocomplete">;
-  readonly focused: FocusedOption;
+  readonly signal: AbortSignal;
+  readonly options: Readonly<Record<string, ResolvedCommandOption | undefined>>;
+  readonly focused: FocusedOption<T>;
   readonly userId: string;
   readonly channelId?: string;
   readonly guildId?: string;
@@ -194,22 +280,48 @@ export interface AutocompleteContext extends OptionAccess {
   readonly botPermissions?: bigint;
 }
 
-/** Context handed to command-scoped component and modal listeners. */
-export interface ListenerContext<
+interface ListenerContextBase<
   K extends "button" | "select" | "modal" = "button" | "select" | "modal",
 > {
   readonly kind: K;
-  readonly command: Command;
-  readonly host: CommandHost;
+  readonly command: AnyCommand;
+  readonly groups: readonly CommandGroup[];
+  readonly path: readonly string[];
   readonly interaction: Interaction<K>;
+  readonly listeners: ListenerBuilders;
   readonly args: readonly string[];
   readonly userId: string;
   readonly channelId?: string;
   readonly guildId?: string;
+  readonly userPermissions?: bigint;
+  readonly botPermissions?: bigint;
   reply(input: Sendable): Promise<unknown>;
   update(input: Sendable): Promise<void>;
-  defer(): Promise<boolean>;
+  readonly defer: K extends "modal"
+    ? (options?: {
+        readonly ephemeral?: boolean;
+      }) => Promise<boolean>
+    : () => Promise<boolean>;
 }
+
+export type ListenerContext<
+  K extends "button" | "select" | "modal" = "button" | "select" | "modal",
+> = K extends "button" | "select"
+  ? ListenerContextBase<K> & {
+      modal(input: types.ModalInteractionResponseData): Promise<void>;
+    }
+  : ListenerContextBase<K>;
+
+export type CommandAccessContext =
+  | CommandContext
+  | AutocompleteContext
+  | ListenerContext;
+
+export type CommandErrorContext = CommandAccessContext;
+
+export type AutocompleteHandler<T extends string | number = string | number> = (
+  context: AutocompleteContext<T>,
+) => Awaitable<readonly CommandChoice<T>[]>;
 
 export type PrefixValue = string | readonly string[] | null | undefined;
 
@@ -256,23 +368,44 @@ export interface CommandPermissionData {
   readonly botPermissions?: PermissionInput;
 }
 
+export interface CommandPermissionNeeds {
+  readonly user: boolean;
+  readonly bot: boolean;
+}
+
 export interface CommandHandleOptions extends CommandPermissionData {
-  readonly resolvePermissions?: () => Awaitable<CommandPermissionData>;
+  readonly resolvePermissions?: (
+    needs: CommandPermissionNeeds,
+    signal?: AbortSignal,
+  ) => Awaitable<CommandPermissionData>;
 }
 
 export type CommandHandleResult =
   | { readonly status: "ignored" }
   | { readonly status: "completed"; readonly path: readonly string[] }
   | { readonly status: "autocomplete"; readonly path: readonly string[] }
-  | { readonly status: "rejected"; readonly rejection: CommandRejection }
-  | { readonly status: "failed"; readonly error: CommandError };
+  | {
+      readonly status: "rejected";
+      readonly path: readonly string[];
+      readonly rejection: CommandRejection;
+    }
+  | {
+      readonly status: "failed";
+      readonly path: readonly string[];
+      readonly error: CommandError;
+    };
 
 export type CommandPublishTarget =
-  | { readonly scope?: "global" }
+  | { readonly scope: "global" }
   | { readonly scope: "guild"; readonly guildId: string };
 
-export interface CommandPublishResult<T = unknown> {
-  readonly target: "global" | "guild";
-  readonly guildId?: string;
-  readonly commands: T;
-}
+export type CommandPublishResult<T = unknown> =
+  | {
+      readonly target: "global";
+      readonly commands: T;
+    }
+  | {
+      readonly target: "guild";
+      readonly guildId: string;
+      readonly commands: T;
+    };

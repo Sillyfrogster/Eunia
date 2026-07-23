@@ -12,7 +12,7 @@ export const interactionHandlers: DispatchHandlerMap = {
     }
 
     const interaction = createInteraction(raw, ctx);
-    void client.handleCommand(interaction).catch(() => undefined);
+    client.handleGatewayCommand(interaction);
     client.emit("interactionCreate", interaction);
   },
 };

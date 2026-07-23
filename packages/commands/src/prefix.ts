@@ -14,20 +14,64 @@ export interface PrefixMatch {
 }
 
 export function normalizePrefixOptions(value: PrefixResolver | PrefixOptions): Required<PrefixOptions> {
-  if (typeof value === "object" && !Array.isArray(value) && "prefixes" in value) {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    "prefixes" in value
+  ) {
+    validateBoolean(value.allowMention, "allowMention");
+    validateBoolean(value.caseSensitive, "caseSensitive");
+    validateBoolean(value.ignoreBots, "ignoreBots");
+    const allowMention = value.allowMention ?? false;
     return Object.freeze({
-      prefixes: value.prefixes,
-      allowMention: value.allowMention ?? false,
+      prefixes: freezeStaticPrefixes(
+        value.prefixes,
+        allowMention,
+      ),
+      allowMention,
       caseSensitive: value.caseSensitive ?? false,
       ignoreBots: value.ignoreBots ?? true,
     });
   }
   return Object.freeze({
-    prefixes: value as PrefixResolver,
+    prefixes: freezeStaticPrefixes(value as PrefixResolver, false),
     allowMention: false,
     caseSensitive: false,
     ignoreBots: true,
   });
+}
+
+function freezeStaticPrefixes(
+  prefixes: PrefixResolver,
+  allowEmpty: boolean,
+): PrefixResolver {
+  if (typeof prefixes === "function") return prefixes;
+  if (typeof prefixes === "string") {
+    if (prefixes.length === 0) {
+      throw new RangeError("Static command prefixes cannot be empty.");
+    }
+    return prefixes;
+  }
+  if (!Array.isArray(prefixes)) {
+    throw new TypeError(
+      "Command prefixes must be a string, an array, or a function.",
+    );
+  }
+  if (!allowEmpty && prefixes.length === 0) {
+    throw new RangeError("At least one command prefix is required.");
+  }
+  if (
+    prefixes.some(
+      (prefix) =>
+        typeof prefix !== "string" || prefix.length === 0,
+    )
+  ) {
+    throw new TypeError(
+      "Static command prefixes must be non-empty strings.",
+    );
+  }
+  return Object.freeze([...prefixes]);
 }
 
 export async function matchPrefix(
@@ -119,11 +163,36 @@ export function tokenizePrefix(content: string): readonly string[] {
 }
 
 function prefixList(value: PrefixValue): string[] {
-  const candidates = typeof value === "string" ? [value] : [...(value ?? [])];
+  if (value === null || value === undefined) return [];
+  const candidates =
+    typeof value === "string"
+      ? [value]
+      : Array.isArray(value)
+        ? value
+        : invalidPrefixResult();
   const prefixes = new Set<string>();
   for (const prefix of candidates) {
-    if (typeof prefix !== "string" || prefix.length === 0) continue;
+    if (typeof prefix !== "string" || prefix.length === 0) {
+      throw new TypeError(
+        "Resolved command prefixes must be non-empty strings.",
+      );
+    }
     prefixes.add(prefix);
   }
   return [...prefixes];
+}
+
+function validateBoolean(
+  value: boolean | undefined,
+  name: string,
+): void {
+  if (value !== undefined && typeof value !== "boolean") {
+    throw new TypeError(`Prefix option ${name} must be a boolean.`);
+  }
+}
+
+function invalidPrefixResult(): never {
+  throw new TypeError(
+    "A prefix resolver must return a string, an array, null, or undefined.",
+  );
 }

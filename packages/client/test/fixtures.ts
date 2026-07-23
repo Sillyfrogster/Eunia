@@ -1,7 +1,12 @@
 import { Intents } from "@eunia/gateway";
-import { PermissionFlags } from "@eunia/types";
+import {
+  ApplicationCommandType,
+  InteractionType,
+  PermissionFlags,
+} from "@eunia/types";
 import type * as types from "@eunia/types";
 import { Client } from "../src/client";
+import type { ClientCommandOptions } from "../src/options";
 
 export const GUILD_ID = "987654321098765432";
 export const CHANNEL_ID = "123456789012345678";
@@ -12,7 +17,10 @@ export function json(body: unknown): Response {
   return Response.json(body);
 }
 
-export function makeClient(script: Array<() => Response> = []) {
+export function makeClient(
+  script: Array<() => Response> = [],
+  commands?: ClientCommandOptions,
+) {
   const calls: Array<{ url: string; init: RequestInit }> = [];
   const fetchImpl = (async (url: unknown, init?: RequestInit) => {
     calls.push({ url: String(url), init: init ?? {} });
@@ -24,8 +32,27 @@ export function makeClient(script: Array<() => Response> = []) {
     token: "unit.test.token",
     intents: [Intents.Guilds],
     rest: { fetch: fetchImpl },
+    ...(commands === undefined ? {} : { commands }),
   });
   return { client, calls };
+}
+
+export function commandInteraction(): types.ApplicationCommandInteraction {
+  return {
+    id: "333333333333333333",
+    application_id: "444444444444444444",
+    token: "interaction.token",
+    version: 1,
+    type: InteractionType.ApplicationCommand,
+    data: {
+      id: "555555555555555555",
+      name: "ping",
+      type: ApplicationCommandType.ChatInput,
+    },
+    entitlements: [],
+    authorizing_integration_owners: {},
+    attachment_size_limit: 10_000_000,
+  };
 }
 
 export function user(overrides: Partial<types.User> = {}): types.User {

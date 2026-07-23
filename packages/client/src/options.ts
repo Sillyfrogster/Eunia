@@ -21,6 +21,7 @@ export interface ClientGatewayOptions {
 export interface ClientCommandOptions extends CommandManagerOptions {
   readonly commands?: readonly CommandNode[];
   readonly publishOnStart?: false | CommandPublishTarget;
+  readonly autoHandle?: boolean;
 }
 
 export interface ClientOptions {
