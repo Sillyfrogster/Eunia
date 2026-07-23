@@ -8,7 +8,7 @@ import {
   type PermissionInput,
 } from "@eunia/types";
 import type * as types from "@eunia/types";
-import type { Command, CommandGroup } from "./command";
+import type { Command, CommandGroup, CommandKind } from "./command";
 import type {
   CommandDefinition,
   CommandGroupDefinition,
@@ -28,7 +28,7 @@ function instanceOf(node: PreparedNode): Command | CommandGroup {
 }
 
 export function validateCommandTree(node: PreparedNode): void {
-  validateDefinition(node.definition);
+  validateDefinition(node.definition, node.commandKind);
   validateAliases(instanceOf(node).aliases, node.definition.name);
   validateNodeSettings(node);
 
@@ -48,7 +48,15 @@ export function serializeCommand(
   node: PreparedNode,
   scope: "global" | "guild" = "global",
 ): types.ApplicationCommandCreate {
-  const root = serializeRoot(node.definition, scope);
+  const type = commandTypeFor(node.commandKind);
+  if (type === ApplicationCommandType.User || type === ApplicationCommandType.Message) {
+    if (node.nodeKind !== "command") {
+      throw new CommandValidationError("Context commands cannot contain command groups.");
+    }
+    return serializeContextRoot(node.definition, type, scope);
+  }
+
+  const root = serializeChatInputRoot(node.definition, scope);
   if (node.nodeKind === "command") {
     const options = node.definition.options?.map(serializeOption);
     return options === undefined || options.length === 0 ? root : { ...root, options };
@@ -58,6 +66,20 @@ export function serializeCommand(
     ...root,
     options: node.children.map((child) => serializeBranch(child)),
   };
+}
+
+export function commandTypeFor(kind: CommandKind): ApplicationCommandType | undefined {
+  switch (kind) {
+    case "slash":
+    case "hybrid":
+      return ApplicationCommandType.ChatInput;
+    case "user":
+      return ApplicationCommandType.User;
+    case "message":
+      return ApplicationCommandType.Message;
+    case "prefix":
+      return undefined;
+  }
 }
 
 export function resolvePermissionBits(value: PermissionInput): bigint {
@@ -90,7 +112,7 @@ function validateGroup(group: PreparedGroup, depth: number): void {
 
   validateSiblingNames(group.children, group.definition.name);
   for (const child of group.children) {
-    validateDefinition(child.definition);
+    validateDefinition(child.definition, child.commandKind);
     validateNestedDefinition(child.definition);
     validateAliases(instanceOf(child).aliases, child.definition.name);
     validateNodeSettings(child);
@@ -127,16 +149,37 @@ function validateSiblingNames(children: readonly PreparedNode[], parent: string)
   );
 }
 
-function validateDefinition(definition: CommandDefinition | CommandGroupDefinition): void {
-  validateName(definition.name, "Command");
-  validateNameLocalizations(definition.nameLocalizations, "Command");
+function validateDefinition(
+  definition: CommandDefinition | CommandGroupDefinition,
+  kind: CommandKind,
+): void {
+  const contextMenu = kind === "user" || kind === "message";
+  if (contextMenu) {
+    validateContextName(definition.name, "Context command");
+    validateNameLocalizations(definition.nameLocalizations, "Context command", true);
+  } else {
+    validateName(definition.name, "Command");
+    validateNameLocalizations(definition.nameLocalizations, "Command");
+  }
   const length = characterLength(definition.description);
-  if (length < 1 || length > 100) {
+  if (contextMenu && length !== 0) {
+    throw new CommandValidationError(
+      `Context command "${definition.name}" cannot declare a description.`,
+    );
+  }
+  if (!contextMenu && (length < 1 || length > 100)) {
     throw new CommandValidationError(
       `Command "${definition.name}" needs a description between 1 and 100 characters.`,
     );
   }
-  validateDescriptionLocalizations(definition.descriptionLocalizations, "Command");
+  if (contextMenu && definition.descriptionLocalizations !== undefined) {
+    throw new CommandValidationError(
+      `Context command "${definition.name}" cannot localize a description.`,
+    );
+  }
+  if (!contextMenu) {
+    validateDescriptionLocalizations(definition.descriptionLocalizations, "Command");
+  }
   if (definition.defaultMemberPermissions !== undefined && definition.defaultMemberPermissions !== null) {
     const permissions = resolvePermissionBits(definition.defaultMemberPermissions);
     if (permissions < 0n) {
@@ -417,7 +460,14 @@ function validateName(name: string, label: string): void {
   }
 }
 
-function serializeRoot(
+function validateContextName(name: string, label: string): void {
+  const length = characterLength(name);
+  if (length < 1 || length > 32) {
+    throw new CommandValidationError(`${label} names must have between 1 and 32 characters.`);
+  }
+}
+
+function serializeChatInputRoot(
   definition: CommandDefinition | CommandGroupDefinition,
   scope: "global" | "guild",
 ): types.ChatInputApplicationCommandCreate {
@@ -431,6 +481,30 @@ function serializeRoot(
       ? {}
       : { description_localizations: definition.descriptionLocalizations }),
     type: ApplicationCommandType.ChatInput,
+    ...serializeRootSettings(definition, scope),
+  };
+}
+
+function serializeContextRoot(
+  definition: CommandDefinition,
+  type: ApplicationCommandType.User | ApplicationCommandType.Message,
+  scope: "global" | "guild",
+): types.ContextMenuApplicationCommandCreate {
+  return {
+    name: definition.name,
+    ...(definition.nameLocalizations === undefined
+      ? {}
+      : { name_localizations: definition.nameLocalizations }),
+    type,
+    ...serializeRootSettings(definition, scope),
+  };
+}
+
+function serializeRootSettings(
+  definition: CommandDefinition | CommandGroupDefinition,
+  scope: "global" | "guild",
+): Omit<types.ApplicationCommandCreateBase, "name" | "name_localizations"> {
+  return {
     ...(definition.defaultMemberPermissions === undefined
       ? {}
       : {
@@ -694,10 +768,16 @@ function serializeChoice<T extends string | number>(
 function validateNameLocalizations(
   localizations: CommandDefinition["nameLocalizations"],
   label: string,
+  contextMenu = false,
 ): void {
   if (localizations === undefined) return;
   for (const value of Object.values(localizations)) {
-    if (value !== null && value !== undefined) validateName(value, `${label} localization`);
+    if (value === null || value === undefined) continue;
+    if (contextMenu) {
+      validateContextName(value, `${label} localization`);
+    } else {
+      validateName(value, `${label} localization`);
+    }
   }
 }
 

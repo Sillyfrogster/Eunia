@@ -1,6 +1,8 @@
 export {
   Command,
   CommandGroup,
+  MessageCommand,
+  UserCommand,
   type CommandKind,
   type CommandNode,
   type CommandNodeClass,
@@ -77,6 +79,8 @@ export type {
   CooldownScope,
   FocusedOption,
   ListenerContext,
+  MessageCommandContext,
+  MessageCommandTarget,
   OptionAccess,
   PrefixCommandContext,
   PrefixOptions,
@@ -89,4 +93,6 @@ export type {
   ResolvedStructureSource,
   ResolvedUser,
   SlashCommandContext,
+  UserCommandContext,
+  UserCommandTarget,
 } from "./types";

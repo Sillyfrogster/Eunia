@@ -95,6 +95,7 @@ interface InteractionCommon {
   resolvedUser(id: string): User | undefined;
   resolvedChannel(id: string): Channel | undefined;
   resolvedRole(id: string): Role | undefined;
+  resolvedMessage(id: string): Message | undefined;
   toJSON(): types.Interaction;
 }
 
@@ -337,6 +338,13 @@ class InteractionImpl {
     return raw === undefined ? undefined : new Role(raw, this.ctx, guildId);
   }
 
+  resolvedMessage(id: string): Message | undefined {
+    const raw = this.resolvedData?.messages?.[id];
+    if (!isCompleteMessage(raw)) return undefined;
+    this.cacheMessage(raw);
+    return new Message(raw, this.ctx);
+  }
+
   private get resolvedData(): types.ResolvedData | undefined {
     const data = this.raw.data;
     return data !== undefined && "resolved" in data ? data.resolved : undefined;
@@ -577,6 +585,27 @@ function isDefinitiveInitialResponseRejection(error: unknown): boolean {
     error.status < 500 &&
     error.status !== 408 &&
     error.code !== 40_060
+  );
+}
+
+function isCompleteMessage(raw: Partial<types.Message> | undefined): raw is types.Message {
+  return (
+    raw !== undefined &&
+    typeof raw.id === "string" &&
+    typeof raw.channel_id === "string" &&
+    raw.author !== undefined &&
+    typeof raw.author.id === "string" &&
+    typeof raw.content === "string" &&
+    typeof raw.timestamp === "string" &&
+    (raw.edited_timestamp === null || typeof raw.edited_timestamp === "string") &&
+    typeof raw.tts === "boolean" &&
+    typeof raw.mention_everyone === "boolean" &&
+    Array.isArray(raw.mentions) &&
+    Array.isArray(raw.mention_roles) &&
+    Array.isArray(raw.attachments) &&
+    Array.isArray(raw.embeds) &&
+    typeof raw.pinned === "boolean" &&
+    typeof raw.type === "number"
   );
 }
 

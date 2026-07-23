@@ -3,7 +3,12 @@
  * a method, no constructor. Option fields (option.*) and listener fields
  * (onButton/onSelect/onModal) are discovered by the manager at registration.
  */
-import type { ApplicationIntegrationType, InteractionContextType, Localizations, PermissionInput } from "@eunia/types";
+import type {
+  ApplicationIntegrationType,
+  InteractionContextType,
+  Localizations,
+  PermissionInput,
+} from "@eunia/types";
 import type {
   AutoDeferOptions,
   AutocompleteContext,
@@ -13,14 +18,16 @@ import type {
   CommandGuard,
   CommandMiddleware,
   CommandRateLimit,
+  MessageCommandContext,
+  UserCommandContext,
 } from "./types";
 
-export type CommandKind = "slash" | "prefix" | "hybrid";
+export type CommandKind = "slash" | "prefix" | "hybrid" | "user" | "message";
 
 export abstract class Command {
   abstract readonly name: string;
-  abstract readonly description: string;
   abstract readonly kind: CommandKind;
+  readonly description: string = "";
 
   readonly aliases: readonly string[] = [];
   readonly middleware: readonly CommandMiddleware[] = [];
@@ -46,6 +53,16 @@ export abstract class Command {
   autocomplete(_context: AutocompleteContext): Awaitable<readonly CommandChoice[]> {
     return [];
   }
+}
+
+export abstract class UserCommand extends Command {
+  readonly kind = "user" as const;
+  abstract run(context: UserCommandContext): Awaitable<void>;
+}
+
+export abstract class MessageCommand extends Command {
+  readonly kind = "message" as const;
+  abstract run(context: MessageCommandContext): Awaitable<void>;
 }
 
 /**

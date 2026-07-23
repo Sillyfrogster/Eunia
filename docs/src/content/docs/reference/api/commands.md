@@ -10,8 +10,8 @@ Extend `Command` for a leaf command.
 ```ts
 abstract class Command {
   abstract readonly name: string;
-  abstract readonly description: string;
-  abstract readonly kind: "slash" | "prefix" | "hybrid";
+  abstract readonly kind: "slash" | "prefix" | "hybrid" | "user" | "message";
+  readonly description: string;
   abstract run(context: CommandContext): void | Promise<void>;
 }
 ```
@@ -19,6 +19,8 @@ abstract class Command {
 Optional fields are `aliases`, `middleware`, `guards`, `guildOnly`, `ownerOnly`, `userPermissions`, `botPermissions`, `rateLimit`, `autoDefer`, `meta`, `nameLocalizations`, `descriptionLocalizations`, `defaultMemberPermissions`, `contexts`, `integrationTypes`, and `nsfw`.
 
 Override `autocomplete(context)` to return command choices.
+
+Use `UserCommand` and `MessageCommand` for context menu commands. They set their own kind and use an empty description because Discord context commands do not accept descriptions or options.
 
 ## CommandGroup
 
@@ -57,9 +59,11 @@ All configs accept `description`, name and description localizations, and `requi
 `CommandContext` is narrowed by `kind`:
 
 - `SlashCommandContext` has `interaction` and `defer(options?)`.
+- `UserCommandContext` adds a resolved user `target` and optional guild member data.
+- `MessageCommandContext` adds a partial message `target` and an optional hydrated `Message`.
 - `PrefixCommandContext` has `message` and `prefix`.
 
-Both expose `command`, `groups`, `path`, `host`, user/channel/guild IDs, resolved permissions, `get`, `has`, and `reply`.
+All command contexts expose `command`, `groups`, `path`, `host`, user/channel/guild IDs, resolved permissions, `get`, `has`, and `reply`. Interaction command contexts also expose `interaction` and `defer`.
 
 `AutocompleteContext` adds `focused` and its autocomplete interaction. `ListenerContext` adds the component or modal interaction, route arguments, `reply`, `update`, and `defer`.
 
@@ -122,4 +126,4 @@ All command configuration and execution errors extend `CommandError` and include
 
 ## Other exports
 
-`tokenizePrefix`, `PrefixMatch`, `PrefixResolver`, `PrefixOptions`, `PrefixValue`, `AutoDeferOptions`, `CommandChoice`, `CommandGuardFailure`, `CommandHandleOptions`, `CommandHost`, `CommandMessages`, `CommandMessageFactory`, `CommandPermissionData`, `CommandPublishResult`, `CommandRest`, `CooldownRequest`, `CooldownResult`, `MemoryCooldownStoreOptions`, `FocusedOption`, `OptionAccess`, all option config types, all listener field and input types, and all resolved option types.
+`tokenizePrefix`, `PrefixMatch`, `PrefixResolver`, `PrefixOptions`, `PrefixValue`, `AutoDeferOptions`, `CommandChoice`, `CommandGuardFailure`, `CommandHandleOptions`, `CommandHost`, `CommandMessages`, `CommandMessageFactory`, `CommandPermissionData`, `CommandPublishResult`, `CommandRest`, `CooldownRequest`, `CooldownResult`, `MemoryCooldownStoreOptions`, `FocusedOption`, `OptionAccess`, `UserCommandTarget`, `MessageCommandTarget`, all option config types, all listener field and input types, and all resolved option types.
