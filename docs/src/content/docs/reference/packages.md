@@ -19,7 +19,7 @@ Eunia uses internal workspaces to keep the source modular. Public exports come f
 | Cache | Bounded memory, Redis, Valkey, and custom adapters |
 | Gateway | Sessions, heartbeats, resume, reconnects, presence, and sharding |
 | REST | Rate limits, retries, uploads, audit reasons, timeouts, and typed errors |
-| Helpers | Embed, component, and modal template registries |
+| Helpers | Content template registries and Components V2 layout helpers |
 | Shared | Logger interfaces and runtime utilities |
 | Types | Discord API payloads, enums, permissions, and gateway dispatch types |
 

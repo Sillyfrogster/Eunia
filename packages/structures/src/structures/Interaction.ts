@@ -86,6 +86,8 @@ interface InteractionCommon {
   readonly channelId: string | undefined;
   readonly state: InteractionState;
   readonly acknowledged: boolean;
+  readonly deferredEphemeral: boolean | undefined;
+  readonly deferredResponse: "message" | "update" | undefined;
   readonly user: User | undefined;
   readonly member: GuildMember | undefined;
   readonly channel: Channel | undefined;
@@ -95,6 +97,7 @@ interface InteractionCommon {
   resolvedUser(id: string): User | undefined;
   resolvedChannel(id: string): Channel | undefined;
   resolvedRole(id: string): Role | undefined;
+  resolvedMessage(id: string): Message | undefined;
   toJSON(): types.Interaction;
 }
 
@@ -224,6 +227,8 @@ class InteractionImpl {
   readonly raw: Readonly<types.Interaction>;
   readonly kind: InteractionKind;
   private currentState: InteractionState = "pending";
+  private currentDeferredEphemeral: boolean | undefined;
+  private currentDeferredResponse: "message" | "update" | undefined;
   private originalHandle: OriginalMessage | undefined;
 
   constructor(
@@ -260,6 +265,18 @@ class InteractionImpl {
 
   get acknowledged(): boolean {
     return this.currentState !== "pending";
+  }
+
+  get deferredEphemeral(): boolean | undefined {
+    return this.currentState === "deferred"
+      ? this.currentDeferredEphemeral
+      : undefined;
+  }
+
+  get deferredResponse(): "message" | "update" | undefined {
+    return this.currentState === "deferred"
+      ? this.currentDeferredResponse
+      : undefined;
   }
 
   get commandName(): string | undefined {
@@ -337,6 +354,13 @@ class InteractionImpl {
     return raw === undefined ? undefined : new Role(raw, this.ctx, guildId);
   }
 
+  resolvedMessage(id: string): Message | undefined {
+    const raw = this.resolvedData?.messages?.[id];
+    if (!isCompleteMessage(raw)) return undefined;
+    this.cacheMessage(raw);
+    return new Message(raw, this.ctx);
+  }
+
   private get resolvedData(): types.ResolvedData | undefined {
     const data = this.raw.data;
     return data !== undefined && "resolved" in data ? data.resolved : undefined;
@@ -379,11 +403,19 @@ class InteractionImpl {
   defer(options: DeferOptions = {}): Promise<void> {
     this.requireKind("command", "button", "select", "modal");
     if (this.deferMode() === InteractionCallbackType.DeferredUpdateMessage) {
+      if (options.ephemeral === true) {
+        throw new RangeError(
+          "A deferred message update cannot change response visibility.",
+        );
+      }
       return this.initialResponse(
         "deferring",
         "deferred",
         InteractionCallbackType.DeferredUpdateMessage,
-      );
+      ).then(() => {
+        this.currentDeferredEphemeral = false;
+        this.currentDeferredResponse = "update";
+      });
     }
     const data: types.InteractionResponseData | undefined = options.ephemeral
       ? { flags: MessageFlags.Ephemeral }
@@ -393,7 +425,10 @@ class InteractionImpl {
       "deferred",
       InteractionCallbackType.DeferredChannelMessageWithSource,
       data,
-    );
+    ).then(() => {
+      this.currentDeferredEphemeral = options.ephemeral ?? false;
+      this.currentDeferredResponse = "message";
+    });
   }
 
   update(input: Sendable): Promise<void> {
@@ -577,6 +612,27 @@ function isDefinitiveInitialResponseRejection(error: unknown): boolean {
     error.status < 500 &&
     error.status !== 408 &&
     error.code !== 40_060
+  );
+}
+
+function isCompleteMessage(raw: Partial<types.Message> | undefined): raw is types.Message {
+  return (
+    raw !== undefined &&
+    typeof raw.id === "string" &&
+    typeof raw.channel_id === "string" &&
+    raw.author !== undefined &&
+    typeof raw.author.id === "string" &&
+    typeof raw.content === "string" &&
+    typeof raw.timestamp === "string" &&
+    (raw.edited_timestamp === null || typeof raw.edited_timestamp === "string") &&
+    typeof raw.tts === "boolean" &&
+    typeof raw.mention_everyone === "boolean" &&
+    Array.isArray(raw.mentions) &&
+    Array.isArray(raw.mention_roles) &&
+    Array.isArray(raw.attachments) &&
+    Array.isArray(raw.embeds) &&
+    typeof raw.pinned === "boolean" &&
+    typeof raw.type === "number"
   );
 }
 

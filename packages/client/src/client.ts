@@ -2,20 +2,19 @@ import { EventEmitter } from "node:events";
 import { Cache, type CacheOptions } from "@eunia/cache";
 import {
   CommandManager,
-  type AutocompleteContext,
-  type CommandContext,
-  type CommandError,
   type CommandHandleResult,
+  type CommandPermissionNeeds,
   type CommandPublishTarget,
 } from "@eunia/commands";
 import {
   Intents,
   ShardManager,
-  type CloseInfo,
   type GatewayBotInfo,
   type GatewayPresence,
-  type ReconnectInfo,
+  type RequestChannelInfoData,
   type RequestGuildMembersData,
+  type RequestSoundboardSoundsData,
+  type UpdateVoiceStateData,
 } from "@eunia/gateway";
 import { EuniaRest, routePath } from "@eunia/rest";
 import { createLogger, type Logger } from "@eunia/shared";
@@ -33,7 +32,6 @@ import {
   type StructureContext,
 } from "@eunia/structures";
 import type * as types from "@eunia/types";
-import { routeDispatch } from "./events";
 import { ChannelsDomain } from "./domains/channels";
 import { GuildsDomain } from "./domains/guilds";
 import { MembersDomain } from "./domains/members";
@@ -42,6 +40,8 @@ import { PinsDomain } from "./domains/pins";
 import { ReactionsDomain } from "./domains/reactions";
 import { RolesDomain } from "./domains/roles";
 import { UsersDomain } from "./domains/users";
+import { routeDispatch } from "./events";
+import type { ClientEventMap, ClientState } from "./events/client-events";
 import { orderModules, type EuniaModule } from "./modules";
 import {
   resolveIntents,
@@ -50,134 +50,11 @@ import {
 } from "./options";
 import { ServiceRegistry } from "./services";
 
-export type ClientState =
-  | "idle"
-  | "starting"
-  | "ready"
-  | "stopping"
-  | "stopped"
-  | "failed";
-
-export interface GuildDeleteInfo {
-  readonly id: string;
-  readonly unavailable: boolean;
-  readonly guild?: Guild;
-}
-
-export interface GuildMemberRemoveInfo {
-  readonly guildId: string;
-  readonly userId: string;
-  readonly member?: GuildMember;
-}
-
-export interface RoleDeleteInfo {
-  readonly guildId: string;
-  readonly roleId: string;
-  readonly role?: Role;
-}
-
-export interface MessageDeleteInfo extends types.MessageDeleteEvent {
-  readonly message?: Message;
-}
-
-export interface MessageDeleteBulkInfo extends types.MessageDeleteBulkEvent {
-  readonly messages: readonly Message[];
-}
-
-export interface Client {
-  embeds: import("../../helpers/src").EmbedRegistry;
-  components: import("../../helpers/src").ComponentRegistry;
-  modals: import("../../helpers/src").ModalRegistry;
-
-  on(event: "ready", listener: (user: User) => void): this;
-  on(event: "stopped", listener: () => void): this;
-  on(event: "stateChange", listener: (state: ClientState, previous: ClientState) => void): this;
-  on(event: "userUpdate", listener: (user: User, previous?: User) => void): this;
-  on(event: "guildCreate", listener: (guild: Guild) => void): this;
-  on(event: "guildUpdate", listener: (guild: Guild, previous?: Guild) => void): this;
-  on(event: "guildDelete", listener: (info: GuildDeleteInfo) => void): this;
-  on(event: "channelCreate", listener: (channel: Channel) => void): this;
-  on(event: "channelUpdate", listener: (channel: Channel, previous?: Channel) => void): this;
-  on(event: "channelDelete", listener: (channel: Channel) => void): this;
-  on(event: "messageCreate", listener: (message: Message) => void): this;
-  on(
-    event: "messageUpdate",
-    listener: (message: Message | undefined, previous: Message | undefined, raw: types.MessageUpdateEvent) => void,
-  ): this;
-  on(event: "messageDelete", listener: (info: MessageDeleteInfo) => void): this;
-  on(event: "messageDeleteBulk", listener: (info: MessageDeleteBulkInfo) => void): this;
-  on(event: "guildMemberAdd", listener: (member: GuildMember) => void): this;
-  on(
-    event: "guildMemberUpdate",
-    listener: (member: GuildMember, previous?: GuildMember) => void,
-  ): this;
-  on(event: "guildMemberRemove", listener: (info: GuildMemberRemoveInfo) => void): this;
-  on(event: "roleCreate", listener: (role: Role) => void): this;
-  on(event: "roleUpdate", listener: (role: Role, previous?: Role) => void): this;
-  on(event: "roleDelete", listener: (info: RoleDeleteInfo) => void): this;
-  on(event: "interactionCreate", listener: (interaction: Interaction) => void): this;
-  on(
-    event: "dispatch",
-    listener: (eventName: string, data: unknown, shardId: number) => void,
-  ): this;
-  on(event: "shardReconnecting", listener: (shardId: number, info: ReconnectInfo) => void): this;
-  on(event: "shardResumed", listener: (shardId: number) => void): this;
-  on(event: "shardClosed", listener: (shardId: number, info: CloseInfo) => void): this;
-  on(
-    event: "commandResult",
-    listener: (result: CommandHandleResult, source: Interaction | Message) => void,
-  ): this;
-  on(
-    event: "commandError",
-    listener: (error: CommandError, context?: CommandContext | AutocompleteContext) => void,
-  ): this;
-  on(event: "clientError", listener: (error: unknown, source: string) => void): this;
-
-  emit(event: "ready", user: User): boolean;
-  emit(event: "stopped"): boolean;
-  emit(event: "stateChange", state: ClientState, previous: ClientState): boolean;
-  emit(event: "userUpdate", user: User, previous?: User): boolean;
-  emit(event: "guildCreate", guild: Guild): boolean;
-  emit(event: "guildUpdate", guild: Guild, previous?: Guild): boolean;
-  emit(event: "guildDelete", info: GuildDeleteInfo): boolean;
-  emit(event: "channelCreate", channel: Channel): boolean;
-  emit(event: "channelUpdate", channel: Channel, previous?: Channel): boolean;
-  emit(event: "channelDelete", channel: Channel): boolean;
-  emit(event: "messageCreate", message: Message): boolean;
-  emit(
-    event: "messageUpdate",
-    message: Message | undefined,
-    previous: Message | undefined,
-    raw: types.MessageUpdateEvent,
-  ): boolean;
-  emit(event: "messageDelete", info: MessageDeleteInfo): boolean;
-  emit(event: "messageDeleteBulk", info: MessageDeleteBulkInfo): boolean;
-  emit(event: "guildMemberAdd", member: GuildMember): boolean;
-  emit(event: "guildMemberUpdate", member: GuildMember, previous?: GuildMember): boolean;
-  emit(event: "guildMemberRemove", info: GuildMemberRemoveInfo): boolean;
-  emit(event: "roleCreate", role: Role): boolean;
-  emit(event: "roleUpdate", role: Role, previous?: Role): boolean;
-  emit(event: "roleDelete", info: RoleDeleteInfo): boolean;
-  emit(event: "interactionCreate", interaction: Interaction): boolean;
-  emit(event: "dispatch", eventName: string, data: unknown, shardId: number): boolean;
-  emit(event: "shardReconnecting", shardId: number, info: ReconnectInfo): boolean;
-  emit(event: "shardResumed", shardId: number): boolean;
-  emit(event: "shardClosed", shardId: number, info: CloseInfo): boolean;
-  emit(
-    event: "commandResult",
-    result: CommandHandleResult,
-    source: Interaction | Message,
-  ): boolean;
-  emit(
-    event: "commandError",
-    error: CommandError,
-    context?: CommandContext | AutocompleteContext,
-  ): boolean;
-  emit(event: "clientError", error: unknown, source: string): boolean;
-}
-
 /** Connects Eunia's transport, cache, structures, commands, and modules. */
-export class Client extends EventEmitter {
+export class Client extends EventEmitter<ClientEventMap> {
+  declare embeds: import("../../helpers/src").EmbedRegistry;
+  declare components: import("../../helpers/src").ComponentRegistry;
+  declare modals: import("../../helpers/src").ModalRegistry;
   readonly rest: EuniaRest;
   readonly cache: StructureCache;
   readonly context: StructureContext;
@@ -198,6 +75,7 @@ export class Client extends EventEmitter {
   private readonly intents: number;
   private readonly gatewayOptions: ClientGatewayOptions;
   private readonly publishOnStart: false | CommandPublishTarget | undefined;
+  private readonly autoHandleCommands: boolean;
   private readonly configuredModules: EuniaModule[];
   private readonly activeModules: EuniaModule[] = [];
   private readonly readyByShard = new Map<number, types.ReadyEvent>();
@@ -221,6 +99,11 @@ export class Client extends EventEmitter {
     this.botIdValue = normalizeOptionalId(options.botId, "botId");
     this.gatewayOptions = structuredClone(options.gateway ?? {});
     this.publishOnStart = structuredClone(options.commands?.publishOnStart);
+    const autoHandleCommands = options.commands?.autoHandle ?? true;
+    if (typeof autoHandleCommands !== "boolean") {
+      throw new TypeError("commands.autoHandle must be a boolean.");
+    }
+    this.autoHandleCommands = autoHandleCommands;
 
     this.rest = new EuniaRest({
       ...options.rest,
@@ -356,6 +239,18 @@ export class Client extends EventEmitter {
     return this.requireGateway().requestGuildMembers(request);
   }
 
+  requestSoundboardSounds(request: RequestSoundboardSoundsData): Promise<void> {
+    return this.requireGateway().requestSoundboardSounds(request);
+  }
+
+  requestChannelInfo(request: RequestChannelInfoData): Promise<void> {
+    return this.requireGateway().requestChannelInfo(request);
+  }
+
+  updateVoiceState(state: UpdateVoiceStateData): Promise<void> {
+    return this.requireGateway().updateVoiceState(state);
+  }
+
   /** @internal Updates identity from one shard's READY event. */
   recordReady(ready: types.ReadyEvent, shardId: number): void {
     this.readyByShard.set(shardId, ready);
@@ -388,14 +283,20 @@ export class Client extends EventEmitter {
     if (receivedApplicationId !== undefined) this.applicationIdValue = receivedApplicationId;
   }
 
-  /** @internal Sends a structure through the command framework. */
+  /**
+   * Routes one interaction or message through the command framework.
+   * Recognized routes emit commandResult.
+   */
   async handleCommand(source: Interaction | Message): Promise<CommandHandleResult> {
     try {
       const result = await this.commands.handle(
         source,
         isInteraction(source)
           ? {}
-          : { resolvePermissions: () => this.commandPermissions(source) },
+          : {
+              resolvePermissions: (needs) =>
+                this.commandPermissions(source, needs),
+            },
       );
       if (result.status !== "ignored") this.emit("commandResult", result, source);
       return result;
@@ -403,6 +304,12 @@ export class Client extends EventEmitter {
       this.reportClientError(error, "command dispatch");
       throw error;
     }
+  }
+
+  /** @internal Starts command handling when the client owns gateway dispatch. */
+  handleGatewayCommand(source: Interaction | Message): void {
+    if (!this.autoHandleCommands) return;
+    void this.handleCommand(source).catch(() => undefined);
   }
 
   private async startInternal(): Promise<this> {
@@ -530,11 +437,20 @@ export class Client extends EventEmitter {
     });
   }
 
-  private async commandPermissions(source: Interaction | Message): Promise<{
+  private async commandPermissions(
+    source: Interaction | Message,
+    needs: CommandPermissionNeeds,
+  ): Promise<{
     userPermissions?: bigint;
     botPermissions?: bigint;
   }> {
-    if (isInteraction(source) || source.guildId === undefined) return {};
+    if (
+      isInteraction(source) ||
+      source.guildId === undefined ||
+      (!needs.user && !needs.bot)
+    ) {
+      return {};
+    }
 
     const guildId = source.guildId;
     const [guild, channel] = await Promise.all([
@@ -558,7 +474,7 @@ export class Client extends EventEmitter {
       : channel;
     if (permissionChannel === undefined) return {};
 
-    const userMember = source.raw.member === undefined
+    const userMember = !needs.user || source.raw.member === undefined
       ? undefined
       : new GuildMember(
           source.raw.member,
@@ -570,7 +486,7 @@ export class Client extends EventEmitter {
       ? undefined
       : permissionChannel.permissionsFor(userMember);
 
-    const botId = this.botIdValue;
+    const botId = needs.bot ? this.botIdValue : undefined;
     const cachedBot = botId === undefined ? undefined : this.members.peek(guildId, botId);
     const botMember =
       cachedBot ??
@@ -616,9 +532,12 @@ export class Client extends EventEmitter {
     this.emitSafely("stateChange", state, previous);
   }
 
-  private emitSafely(event: string, ...args: unknown[]): boolean {
+  private emitSafely<EventName extends keyof ClientEventMap>(
+    event: EventName,
+    ...args: ClientEventMap[EventName]
+  ): boolean {
     try {
-      return super.emit(event, ...args);
+      return EventEmitter.prototype.emit.call(this, event, ...args);
     } catch (error) {
       this.reportClientError(error, `${event} listener`);
       return false;

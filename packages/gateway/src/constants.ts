@@ -33,6 +33,10 @@ export enum GatewayOpcode {
   Hello = 10,
   /** receive · Acknowledges a heartbeat. */
   HeartbeatAck = 11,
+  /** send · Request soundboard sounds for one or more guilds. */
+  RequestSoundboardSounds = 31,
+  /** send · Request ephemeral voice channel information for a guild. */
+  RequestChannelInfo = 43,
 }
 
 /**

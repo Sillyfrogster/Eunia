@@ -5,8 +5,8 @@
 [![Discord support server](https://img.shields.io/badge/Discord-Support_server-5865F2?logo=discord&logoColor=white)](https://discord.gg/WuPqrRtYHX)
 
 Eunia is a TypeScript Discord library built for Bun. It keeps the core small,
-lets you replace storage and other services, and includes a slash-first command
-framework.
+lets you replace storage and other services, and includes an application and
+prefix command framework.
 
 Eunia is in alpha. The public API may change before the first stable release.
 Voice support is outside this release and will be handled separately.
@@ -21,14 +21,13 @@ Install Eunia:
 bun add @sillyfrogster/eunia@alpha
 ```
 
-Create a command class and start the client:
+Create a command and start the client:
 
 ```ts
 import {
   Client,
-  Command,
   Intents,
-  type CommandContext,
+  command,
 } from "@sillyfrogster/eunia";
 
 const token = process.env["DISCORD_TOKEN"]?.trim();
@@ -40,22 +39,20 @@ if (!developmentGuildId || !/^\d{17,20}$/.test(developmentGuildId)) {
   throw new Error("Set DISCORD_GUILD_ID to a development guild ID.");
 }
 
-class PingCommand extends Command {
-  name = "ping";
-  description = "Check whether the bot is ready";
-  kind = "slash" as const;
-  rateLimit = { limit: 2, windowMs: 5_000, scope: "user" as const };
-
-  async run(context: CommandContext): Promise<void> {
+const ping = command({
+  name: "ping",
+  description: "Check whether the bot is ready",
+  rateLimit: { limit: 2, windowMs: 5_000, scope: "user" },
+  async run(context) {
     await context.reply("Pong!");
-  }
-}
+  },
+});
 
 const client = new Client({
   token,
   intents: [Intents.Guilds],
   commands: {
-    commands: [new PingCommand()],
+    commands: [ping],
     publishOnStart: {
       scope: "guild",
       guildId: developmentGuildId,
@@ -70,8 +67,8 @@ client.on("ready", (user) => {
 await client.start();
 ```
 
-`publishOnStart` replaces every command in the development guild. Guild
-commands update immediately, which makes them useful while you work.
+`publishOnStart` replaces every application command in the development guild.
+Guild commands update immediately, which makes them useful while you work.
 
 Publish once to the global scope when the commands are ready for every server:
 
@@ -83,6 +80,11 @@ Run global publishing as a release step instead of publishing on every restart.
 Do not loop over the bot's guild IDs. A separate publishing process can set
 `applicationId` in `ClientOptions` and publish without connecting the gateway.
 
+Every publish requires an explicit global or guild target. Publishing refuses
+an empty application command list. Use
+`clearPublishedCommands(target)` only when clearing a whole Discord command
+scope is intentional.
+
 ## What is included
 
 - A resumable, compressed, multi-shard gateway client.
@@ -91,10 +93,10 @@ Do not loop over the bot's guild IDs. A separate publishing process can set
 - Bounded memory caching with optional Redis, Valkey, or custom adapters.
 - Snapshot-based users, guilds, channels, messages, members, roles, and
   interactions with common methods.
-- Declarative command classes, groups, subcommands, typed option fields,
+- Immutable command definitions, groups, subcommands, typed option fields,
   command-scoped component listeners, autocomplete, guards, middleware,
   permissions, cooldowns, and automatic deferral.
-- Optional message prefixes that use the same command classes as slash
+- Optional message prefixes that can share definitions with slash
   commands.
 - Ordered modules, shared services, and custom cache namespaces for third-party
   extensions.
@@ -146,7 +148,7 @@ memory layer, so structure relations stay synchronous.
 | Cache | Bounded memory, Redis, Valkey, and custom cache adapters |
 | Gateway | WebSocket sessions, heartbeats, resume, and sharding |
 | REST | HTTP transport, rate limits, retries, uploads, and route binding |
-| Helpers | Opt-in embed, component, and modal content templates |
+| Helpers | Content templates and Components V2 layout helpers |
 | Shared | Logger interfaces and shared runtime utilities |
 | Types | Discord API payloads, enums, and shared protocol types |
 

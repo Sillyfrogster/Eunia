@@ -7,6 +7,25 @@ import {
   type TemplateRegistry,
 } from "./templates";
 
+export {
+  componentsV2,
+  type ComponentsV2ContainerChild,
+  type ComponentsV2ContainerOptions,
+  type ComponentsV2FileOptions,
+  type ComponentsV2GalleryItem,
+  type ComponentsV2GalleryOptions,
+  type ComponentsV2Helpers,
+  type ComponentsV2MessageOptions,
+  type ComponentsV2RowChildren,
+  type ComponentsV2RowOptions,
+  type ComponentsV2SectionContent,
+  type ComponentsV2SectionOptions,
+  type ComponentsV2Select,
+  type ComponentsV2SeparatorOptions,
+  type ComponentsV2TextOptions,
+  type ComponentsV2ThumbnailOptions,
+} from "./components-v2";
+
 export type { TemplateMap, TemplateRegistry } from "./templates";
 
 export type EmbedTemplates = TemplateMap<types.Embed>;

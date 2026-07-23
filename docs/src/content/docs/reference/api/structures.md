@@ -49,8 +49,8 @@ Properties: `author`, `content`, `channelId`, `guildId`, `editedAt`, cached `cha
 | `delete()` | `Promise<void>` |
 | `react(emoji)` | `Promise<void>` |
 | `removeOwnReaction(emoji)` | `Promise<void>` |
-| `pin()` | `Promise<void>` |
-| `unpin()` | `Promise<void>` |
+| `pin(audit?)` | `Promise<void>` |
+| `unpin(audit?)` | `Promise<void>` |
 
 ## Guild
 
@@ -102,7 +102,7 @@ Properties: `guildId`, `name`, `mention`, `permissions`, and cached `guild`.
 
 `Interaction` is a union narrowed by `kind`: `command`, `autocomplete`, `button`, `select`, or `modal`.
 
-All kinds expose the raw payload, IDs, response state, cached user/member/channel/guild values, fetch methods, resolved option lookups, and `toJSON()`.
+All kinds expose the raw payload, IDs, response state, cached user/member/channel/guild values, fetch methods, resolved user/channel/role/message lookups, and `toJSON()`.
 
 | Kind | Added members |
 | --- | --- |

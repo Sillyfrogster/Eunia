@@ -64,7 +64,33 @@ export default defineConfig({
           items: [
             { label: "Overview", slug: "reference/api" },
             { label: "Client", slug: "reference/api/client" },
-            { label: "Commands", slug: "reference/api/commands" },
+            {
+              label: "Commands",
+              collapsed: true,
+              items: [
+                { label: "Overview", slug: "reference/api/commands" },
+                {
+                  label: "Definitions and routes",
+                  slug: "reference/api/commands/definitions",
+                },
+                {
+                  label: "Options and contexts",
+                  slug: "reference/api/commands/options-and-contexts",
+                },
+                {
+                  label: "Listeners",
+                  slug: "reference/api/commands/listeners",
+                },
+                {
+                  label: "Access and middleware",
+                  slug: "reference/api/commands/access-and-middleware",
+                },
+                {
+                  label: "Manager and errors",
+                  slug: "reference/api/commands/manager-and-errors",
+                },
+              ],
+            },
             { label: "Structures", slug: "reference/api/structures" },
             { label: "Cache", slug: "reference/api/cache" },
             { label: "Gateway", slug: "reference/api/gateway" },

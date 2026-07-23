@@ -1,237 +1,283 @@
-/**
- * Registration-time preparation: discovers option and listener fields on a
- * command instance, assigns their wire names from the field keys, validates
- * kind applicability fail-fast, and builds the internal definitions the
- * validator and serializer consume.
- */
-import { ApplicationCommandOptionType } from "@eunia/types";
 import {
-  Command,
+  ApplicationCommandOptionType,
+  ApplicationCommandType,
+} from "@eunia/types";
+import type {
+  AnyCommand,
   CommandGroup,
-  type CommandKind,
-  type CommandNode,
-  type CommandNodeClass,
+  CommandNode,
 } from "./command";
+import { isCommandNode } from "./command";
 import type {
   CommandDefinition,
   CommandGroupDefinition,
   CommandOptionDefinition,
 } from "./definition";
 import { CommandValidationError } from "./errors";
-import { OptionField, type ChannelOptionConfig, type NumericOptionConfig, type StringOptionConfig } from "./fields";
-import { isListenerField, type ListenerField } from "./listeners";
+import {
+  isOptionField,
+  type OptionField,
+  type ChannelOptionConfig,
+  type NumericOptionConfig,
+  type StringOptionConfig,
+} from "./fields";
+import {
+  bindListener,
+  bindListenerBuilders,
+  isListenerField,
+  listenerRoute,
+  type ListenerField,
+  type ListenerHandle,
+  type ListenerBuilders,
+} from "./listeners";
+
+export interface PreparedListener {
+  readonly route: string;
+  readonly field: ListenerField;
+}
 
 export interface PreparedCommand {
   readonly nodeKind: "command";
-  readonly command: Command;
-  readonly commandKind: CommandKind;
+  readonly command: AnyCommand;
+  readonly path: readonly string[];
+  readonly applicationType?: ApplicationCommandType;
+  readonly prefix: boolean;
+  readonly aliases: readonly string[];
   readonly definition: CommandDefinition;
   readonly options: readonly CommandOptionDefinition[];
   readonly fields: ReadonlyMap<string, OptionField<unknown, boolean>>;
-  readonly listeners: ReadonlyMap<string, ListenerField>;
+  readonly listeners: ReadonlyMap<string, PreparedListener>;
+  readonly listenerHandles: Readonly<Record<string, ListenerHandle<ListenerField>>>;
+  readonly listenerBuilders: ListenerBuilders;
 }
 
 export interface PreparedGroup {
   readonly nodeKind: "group";
   readonly group: CommandGroup;
-  readonly commandKind: CommandKind;
+  readonly path: readonly string[];
+  readonly applicationType?: ApplicationCommandType.ChatInput;
+  readonly prefix: boolean;
+  readonly aliases: readonly string[];
   readonly definition: CommandGroupDefinition;
   readonly children: readonly PreparedNode[];
 }
 
 export type PreparedNode = PreparedCommand | PreparedGroup;
 
-export function prepareNode(node: CommandNode): PreparedNode {
-  return node instanceof Command ? prepareCommand(node) : prepareGroup(node);
-}
-
-export function instantiateNode(ctor: CommandNodeClass): CommandNode {
-  const instance = new ctor();
-  if (!(instance instanceof Command) && !(instance instanceof CommandGroup)) {
+export function prepareNode(
+  node: CommandNode,
+  parentPath: readonly string[] = [],
+): PreparedNode {
+  if (!isCommandNode(node)) {
     throw new CommandValidationError(
-      "Command group children must be Command or CommandGroup classes.",
+      "Commands must be created with a command definition function.",
     );
   }
-  return instance;
+  const path = Object.freeze([...parentPath, node.name]);
+  return node.type === "group"
+    ? prepareGroup(node, path)
+    : prepareCommand(node, path);
 }
 
-const COMMAND_KINDS: ReadonlySet<string> = new Set(["slash", "prefix", "hybrid"]);
-
-function prepareCommand(command: Command): PreparedCommand {
-  if (!COMMAND_KINDS.has(command.kind)) {
-    throw new CommandValidationError(
-      `Command "${command.name}" declares the unknown kind "${command.kind}".`,
-    );
-  }
-
+function prepareCommand(
+  command: AnyCommand,
+  path: readonly string[],
+): PreparedCommand {
   const fields = new Map<string, OptionField<unknown, boolean>>();
-  const listeners = new Map<string, ListenerField>();
+  const listeners = new Map<string, PreparedListener>();
+  const listenerHandles: Record<
+    string,
+    ListenerHandle<ListenerField>
+  > = Object.create(null) as Record<
+    string,
+    ListenerHandle<ListenerField>
+  >;
   const options: CommandOptionDefinition[] = [];
 
-  for (const [key, value] of Object.entries(command)) {
-    if (value instanceof OptionField) {
-      if (value.name.length > 0 && value.name !== key) {
+  if (command.type === "chat" || command.type === "prefix") {
+    for (const [name, field] of Object.entries(command.options)) {
+      if (!isOptionField(field)) {
         throw new CommandValidationError(
-          `Option field "${key}" on "${command.name}" is already registered as "${value.name}".`,
+          `Option "${name}" on "${command.name}" is not an option definition.`,
         );
       }
-      value.name = key;
-      fields.set(key, value);
-      options.push(optionDefinition(command, key, value));
-    } else if (isListenerField(value)) {
-      const route = `${command.name}.${key}`;
-      if (value.route.length > 0 && value.route !== route) {
-        throw new CommandValidationError(
-          `Listener field "${key}" on "${command.name}" is already registered as "${value.route}".`,
-        );
-      }
-      value.route = route;
-      if ([...route].length > 90) {
-        throw new CommandValidationError(
-          `Listener route "${route}" leaves no room for args in the 100-character custom_id.`,
-        );
-      }
-      listeners.set(key, value);
+      fields.set(name, field);
+      options.push(optionDefinition(command, name, field));
     }
   }
 
-  validateKindApplicability(command, options);
+  for (const [name, field] of Object.entries(command.listeners)) {
+    if (!isListenerField(field)) {
+      throw new CommandValidationError(
+        `Listener "${name}" on "${command.name}" is not a listener definition.`,
+      );
+    }
+    const route = listenerRoute([command.type, ...path, name, field.kind]);
+    listeners.set(name, { route, field });
+    listenerHandles[name] = bindListener(field, route);
+  }
 
+  const applicationType = applicationTypeFor(command);
+  const registration =
+    command.type === "prefix" ? undefined : command.registration;
+  const description =
+    command.type === "user" || command.type === "message"
+      ? ""
+      : command.description;
   const definition: CommandDefinition = {
     name: command.name,
-    ...(command.nameLocalizations === undefined
+    ...(registration?.nameLocalizations === undefined
       ? {}
-      : { nameLocalizations: command.nameLocalizations }),
-    description: command.description,
-    ...(command.descriptionLocalizations === undefined
+      : { nameLocalizations: registration.nameLocalizations }),
+    description,
+    ...(command.type !== "chat" ||
+    command.registration?.descriptionLocalizations === undefined
       ? {}
-      : { descriptionLocalizations: command.descriptionLocalizations }),
-    ...(options.length === 0 ? {} : { options }),
-    ...(command.defaultMemberPermissions === undefined
+      : {
+          descriptionLocalizations:
+            command.registration.descriptionLocalizations,
+        }),
+    ...(options.length === 0 ? {} : { options: Object.freeze(options) }),
+    ...(registration?.defaultMemberPermissions === undefined
       ? {}
-      : { defaultMemberPermissions: command.defaultMemberPermissions }),
-    ...(command.contexts === undefined ? {} : { contexts: command.contexts }),
-    ...(command.integrationTypes === undefined
+      : {
+          defaultMemberPermissions:
+            registration.defaultMemberPermissions,
+        }),
+    ...(registration?.contexts === undefined
       ? {}
-      : { integrationTypes: command.integrationTypes }),
-    ...(command.nsfw === undefined ? {} : { nsfw: command.nsfw }),
+      : { contexts: registration.contexts }),
+    ...(registration?.integrationTypes === undefined
+      ? {}
+      : { integrationTypes: registration.integrationTypes }),
+    ...(registration?.nsfw === undefined ? {} : { nsfw: registration.nsfw }),
   };
 
-  return {
+  const frozenListenerHandles = Object.freeze(listenerHandles);
+  return Object.freeze({
     nodeKind: "command",
     command,
-    commandKind: command.kind,
-    definition,
-    options,
+    path,
+    ...(applicationType === undefined ? {} : { applicationType }),
+    prefix: supportsPrefix(command),
+    aliases: prefixAliases(command),
+    definition: Object.freeze(definition),
+    options: Object.freeze(options),
     fields,
     listeners,
-  };
+    listenerHandles: frozenListenerHandles,
+    listenerBuilders: bindListenerBuilders(frozenListenerHandles),
+  });
 }
 
-function prepareGroup(group: CommandGroup): PreparedGroup {
+function prepareGroup(
+  group: CommandGroup,
+  path: readonly string[],
+): PreparedGroup {
   if (group.children.length === 0) {
-    throw new CommandValidationError(`Command group "${group.name}" has no commands.`);
+    throw new CommandValidationError(
+      `Command group "${group.name}" has no commands.`,
+    );
   }
-  const children = group.children.map((ctor) => prepareNode(instantiateNode(ctor)));
 
-  const kinds = new Set(children.map((child) => child.commandKind));
-  if (kinds.size !== 1) {
+  const children = group.children.map((child) => prepareNode(child, path));
+  const contextCommand = children.find(
+    (child) =>
+      child.applicationType === ApplicationCommandType.User ||
+      child.applicationType === ApplicationCommandType.Message,
+  );
+  if (contextCommand !== undefined) {
     throw new CommandValidationError(
-      `Command group "${group.name}" mixes command kinds; children must share one kind.`,
+      `Command group "${group.name}" contains a context command.`,
     );
   }
-  const commandKind = children[0]!.commandKind;
-  if (commandKind === "slash" && group.aliases.length > 0) {
+
+  const application = children.some(
+    (child) => child.applicationType === ApplicationCommandType.ChatInput,
+  );
+  const prefix = children.some((child) => child.prefix);
+  if (!application && group.registration !== undefined) {
     throw new CommandValidationError(
-      `Command group "${group.name}" declares aliases but its commands are slash-only.`,
+      `Command group "${group.name}" has application settings but no chat-input commands.`,
     );
   }
-  if (commandKind === "prefix" && hasRootRegistrationSettings(group)) {
+  if (!prefix && group.prefix !== undefined) {
     throw new CommandValidationError(
-      `Command group "${group.name}" declares slash registration settings but its commands are prefix-only.`,
+      `Command group "${group.name}" has prefix settings but no prefix commands.`,
     );
   }
 
   const definition: CommandGroupDefinition = {
     name: group.name,
-    ...(group.nameLocalizations === undefined
+    ...(group.registration?.nameLocalizations === undefined
       ? {}
-      : { nameLocalizations: group.nameLocalizations }),
+      : { nameLocalizations: group.registration.nameLocalizations }),
     description: group.description,
-    ...(group.descriptionLocalizations === undefined
+    ...(group.registration?.descriptionLocalizations === undefined
       ? {}
-      : { descriptionLocalizations: group.descriptionLocalizations }),
-    ...(group.defaultMemberPermissions === undefined
+      : {
+          descriptionLocalizations:
+            group.registration.descriptionLocalizations,
+        }),
+    ...(group.registration?.defaultMemberPermissions === undefined
       ? {}
-      : { defaultMemberPermissions: group.defaultMemberPermissions }),
-    ...(group.contexts === undefined ? {} : { contexts: group.contexts }),
-    ...(group.integrationTypes === undefined
+      : {
+          defaultMemberPermissions:
+            group.registration.defaultMemberPermissions,
+        }),
+    ...(group.registration?.contexts === undefined
       ? {}
-      : { integrationTypes: group.integrationTypes }),
-    ...(group.nsfw === undefined ? {} : { nsfw: group.nsfw }),
+      : { contexts: group.registration.contexts }),
+    ...(group.registration?.integrationTypes === undefined
+      ? {}
+      : { integrationTypes: group.registration.integrationTypes }),
+    ...(group.registration?.nsfw === undefined
+      ? {}
+      : { nsfw: group.registration.nsfw }),
   };
 
-  return { nodeKind: "group", group, commandKind, definition, children };
+  return Object.freeze({
+    nodeKind: "group",
+    group,
+    path,
+    ...(application
+      ? { applicationType: ApplicationCommandType.ChatInput as const }
+      : {}),
+    prefix,
+    aliases: Object.freeze([...(group.prefix?.aliases ?? [])]),
+    definition: Object.freeze(definition),
+    children: Object.freeze(children),
+  });
 }
 
-function validateKindApplicability(
-  command: Command,
-  options: readonly CommandOptionDefinition[],
-): void {
-  if (command.kind === "slash") {
-    if (command.aliases.length > 0) {
-      throw new CommandValidationError(
-        `Command "${command.name}" declares aliases, which have no effect on a slash command.`,
-      );
-    }
-    const restOption = options.find(
-      (option) => "prefix" in option && option.prefix !== undefined,
-    );
-    if (restOption !== undefined) {
-      throw new CommandValidationError(
-        `Option "${restOption.name}" on "${command.name}" declares prefix parsing on a slash command.`,
-      );
-    }
-  }
-
-  if (command.kind === "prefix") {
-    const inert: string[] = [];
-    if (command.autoDefer !== undefined) inert.push("autoDefer");
-    if (command.defaultMemberPermissions !== undefined) inert.push("defaultMemberPermissions");
-    if (command.contexts !== undefined) inert.push("contexts");
-    if (command.integrationTypes !== undefined) inert.push("integrationTypes");
-    if (command.nsfw !== undefined) inert.push("nsfw");
-    if (command.nameLocalizations !== undefined) inert.push("nameLocalizations");
-    if (command.descriptionLocalizations !== undefined) inert.push("descriptionLocalizations");
-    if (inert.length > 0) {
-      throw new CommandValidationError(
-        `Command "${command.name}" declares ${inert.join(", ")}, which have no effect on a prefix command.`,
-      );
-    }
-    const autocompleteOption = options.find(
-      (option) => "autocomplete" in option && option.autocomplete === true,
-    );
-    if (autocompleteOption !== undefined) {
-      throw new CommandValidationError(
-        `Option "${autocompleteOption.name}" on "${command.name}" declares autocomplete on a prefix command.`,
-      );
-    }
+function applicationTypeFor(
+  command: AnyCommand,
+): ApplicationCommandType | undefined {
+  switch (command.type) {
+    case "chat":
+      return ApplicationCommandType.ChatInput;
+    case "user":
+      return ApplicationCommandType.User;
+    case "message":
+      return ApplicationCommandType.Message;
+    case "prefix":
+      return undefined;
   }
 }
 
-function hasRootRegistrationSettings(group: CommandGroup): boolean {
-  return (
-    group.defaultMemberPermissions !== undefined ||
-    group.contexts !== undefined ||
-    group.integrationTypes !== undefined ||
-    group.nsfw !== undefined ||
-    group.nameLocalizations !== undefined ||
-    group.descriptionLocalizations !== undefined
-  );
+function supportsPrefix(command: AnyCommand): boolean {
+  return command.type === "prefix" ||
+    (command.type === "chat" && command.prefix !== undefined);
+}
+
+function prefixAliases(command: AnyCommand): readonly string[] {
+  if (command.type === "prefix") return command.aliases;
+  if (command.type !== "chat" || command.prefix === undefined) return [];
+  return command.prefix === true ? [] : command.prefix.aliases ?? [];
 }
 
 function optionDefinition(
-  command: Command,
+  command: Extract<AnyCommand, { type: "chat" | "prefix" }>,
   name: string,
   field: OptionField<unknown, boolean>,
 ): CommandOptionDefinition {
@@ -242,7 +288,7 @@ function optionDefinition(
       ? {}
       : { nameLocalizations: config.nameLocalizations }),
     description:
-      config.description ?? (command.kind === "prefix" ? name : ""),
+      config.description ?? (command.type === "prefix" ? name : ""),
     ...(config.descriptionLocalizations === undefined
       ? {}
       : { descriptionLocalizations: config.descriptionLocalizations }),
@@ -256,9 +302,15 @@ function optionDefinition(
         ...base,
         type: field.type,
         ...(string.choices === undefined ? {} : { choices: string.choices }),
-        ...(string.autocomplete === undefined ? {} : { autocomplete: string.autocomplete }),
-        ...(string.minLength === undefined ? {} : { minLength: string.minLength }),
-        ...(string.maxLength === undefined ? {} : { maxLength: string.maxLength }),
+        ...(string.autocomplete === undefined
+          ? {}
+          : { autocomplete: true }),
+        ...(string.minLength === undefined
+          ? {}
+          : { minLength: string.minLength }),
+        ...(string.maxLength === undefined
+          ? {}
+          : { maxLength: string.maxLength }),
         ...(string.prefix === undefined ? {} : { prefix: string.prefix }),
       };
     }
@@ -269,9 +321,15 @@ function optionDefinition(
         ...base,
         type: field.type,
         ...(numeric.choices === undefined ? {} : { choices: numeric.choices }),
-        ...(numeric.autocomplete === undefined ? {} : { autocomplete: numeric.autocomplete }),
-        ...(numeric.minValue === undefined ? {} : { minValue: numeric.minValue }),
-        ...(numeric.maxValue === undefined ? {} : { maxValue: numeric.maxValue }),
+        ...(numeric.autocomplete === undefined
+          ? {}
+          : { autocomplete: true }),
+        ...(numeric.minValue === undefined
+          ? {}
+          : { minValue: numeric.minValue }),
+        ...(numeric.maxValue === undefined
+          ? {}
+          : { maxValue: numeric.maxValue }),
       };
     }
     case ApplicationCommandOptionType.Channel: {
@@ -279,7 +337,9 @@ function optionDefinition(
       return {
         ...base,
         type: field.type,
-        ...(channel.channelTypes === undefined ? {} : { channelTypes: channel.channelTypes }),
+        ...(channel.channelTypes === undefined
+          ? {}
+          : { channelTypes: channel.channelTypes }),
       };
     }
     case ApplicationCommandOptionType.Boolean:
@@ -290,7 +350,7 @@ function optionDefinition(
       return { ...base, type: field.type } as CommandOptionDefinition;
     default:
       throw new CommandValidationError(
-        `Option field "${name}" on "${command.name}" has an unknown type.`,
+        `Option "${name}" on "${command.name}" has an unknown type.`,
       );
   }
 }

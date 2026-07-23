@@ -1,6 +1,6 @@
 {
   "name": "@eunia/client",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "description": "Configurable Discord client and module host for Eunia",
   "type": "module",

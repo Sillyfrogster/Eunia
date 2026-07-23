@@ -72,6 +72,24 @@ export interface RequestGuildMembersData {
   nonce?: string;
 }
 
+export interface RequestSoundboardSoundsData {
+  guild_ids: string[];
+}
+
+export type ChannelInfoField = "status" | "voice_start_time";
+
+export interface RequestChannelInfoData {
+  guild_id: string;
+  fields: ChannelInfoField[];
+}
+
+export interface UpdateVoiceStateData {
+  guild_id: string;
+  channel_id: string | null;
+  self_mute: boolean;
+  self_deaf: boolean;
+}
+
 /**
  * Data of the RESUME frame. Reattaches to an existing session after a
  * disconnect. `seq` is the last sequence number that was processed.
