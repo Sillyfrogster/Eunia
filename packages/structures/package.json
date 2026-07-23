@@ -1,6 +1,6 @@
 {
   "name": "@eunia/structures",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "description": "Discord structures and helpers for Eunia",
   "type": "module",
