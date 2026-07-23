@@ -146,7 +146,7 @@ memory layer, so structure relations stay synchronous.
 | Cache | Bounded memory, Redis, Valkey, and custom cache adapters |
 | Gateway | WebSocket sessions, heartbeats, resume, and sharding |
 | REST | HTTP transport, rate limits, retries, uploads, and route binding |
-| Helpers | Opt-in embed, component, and modal content templates |
+| Helpers | Content templates and Components V2 layout helpers |
 | Shared | Logger interfaces and shared runtime utilities |
 | Types | Discord API payloads, enums, and shared protocol types |
 
