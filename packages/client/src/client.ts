@@ -3,6 +3,7 @@ import { Cache, type CacheOptions } from "@eunia/cache";
 import {
   CommandManager,
   type CommandHandleResult,
+  type CommandPermissionNeeds,
   type CommandPublishTarget,
 } from "@eunia/commands";
 import {
@@ -74,6 +75,7 @@ export class Client extends EventEmitter<ClientEventMap> {
   private readonly intents: number;
   private readonly gatewayOptions: ClientGatewayOptions;
   private readonly publishOnStart: false | CommandPublishTarget | undefined;
+  private readonly autoHandleCommands: boolean;
   private readonly configuredModules: EuniaModule[];
   private readonly activeModules: EuniaModule[] = [];
   private readonly readyByShard = new Map<number, types.ReadyEvent>();
@@ -97,6 +99,11 @@ export class Client extends EventEmitter<ClientEventMap> {
     this.botIdValue = normalizeOptionalId(options.botId, "botId");
     this.gatewayOptions = structuredClone(options.gateway ?? {});
     this.publishOnStart = structuredClone(options.commands?.publishOnStart);
+    const autoHandleCommands = options.commands?.autoHandle ?? true;
+    if (typeof autoHandleCommands !== "boolean") {
+      throw new TypeError("commands.autoHandle must be a boolean.");
+    }
+    this.autoHandleCommands = autoHandleCommands;
 
     this.rest = new EuniaRest({
       ...options.rest,
@@ -276,14 +283,20 @@ export class Client extends EventEmitter<ClientEventMap> {
     if (receivedApplicationId !== undefined) this.applicationIdValue = receivedApplicationId;
   }
 
-  /** @internal Sends a structure through the command framework. */
+  /**
+   * Routes one interaction or message through the command framework.
+   * Recognized routes emit commandResult.
+   */
   async handleCommand(source: Interaction | Message): Promise<CommandHandleResult> {
     try {
       const result = await this.commands.handle(
         source,
         isInteraction(source)
           ? {}
-          : { resolvePermissions: () => this.commandPermissions(source) },
+          : {
+              resolvePermissions: (needs) =>
+                this.commandPermissions(source, needs),
+            },
       );
       if (result.status !== "ignored") this.emit("commandResult", result, source);
       return result;
@@ -291,6 +304,12 @@ export class Client extends EventEmitter<ClientEventMap> {
       this.reportClientError(error, "command dispatch");
       throw error;
     }
+  }
+
+  /** @internal Starts command handling when the client owns gateway dispatch. */
+  handleGatewayCommand(source: Interaction | Message): void {
+    if (!this.autoHandleCommands) return;
+    void this.handleCommand(source).catch(() => undefined);
   }
 
   private async startInternal(): Promise<this> {
@@ -418,11 +437,20 @@ export class Client extends EventEmitter<ClientEventMap> {
     });
   }
 
-  private async commandPermissions(source: Interaction | Message): Promise<{
+  private async commandPermissions(
+    source: Interaction | Message,
+    needs: CommandPermissionNeeds,
+  ): Promise<{
     userPermissions?: bigint;
     botPermissions?: bigint;
   }> {
-    if (isInteraction(source) || source.guildId === undefined) return {};
+    if (
+      isInteraction(source) ||
+      source.guildId === undefined ||
+      (!needs.user && !needs.bot)
+    ) {
+      return {};
+    }
 
     const guildId = source.guildId;
     const [guild, channel] = await Promise.all([
@@ -446,7 +474,7 @@ export class Client extends EventEmitter<ClientEventMap> {
       : channel;
     if (permissionChannel === undefined) return {};
 
-    const userMember = source.raw.member === undefined
+    const userMember = !needs.user || source.raw.member === undefined
       ? undefined
       : new GuildMember(
           source.raw.member,
@@ -458,7 +486,7 @@ export class Client extends EventEmitter<ClientEventMap> {
       ? undefined
       : permissionChannel.permissionsFor(userMember);
 
-    const botId = this.botIdValue;
+    const botId = needs.bot ? this.botIdValue : undefined;
     const cachedBot = botId === undefined ? undefined : this.members.peek(guildId, botId);
     const botMember =
       cachedBot ??

@@ -1,10 +1,9 @@
 import {
   Client,
-  Command,
   Intents,
+  command,
   onButton,
   types,
-  type CommandContext,
 } from "@sillyfrogster/eunia";
 
 const token = process.env.DISCORD_TOKEN?.trim();
@@ -13,35 +12,34 @@ const guildId = process.env.DISCORD_GUILD_ID?.trim();
 if (!token) throw new Error("Set DISCORD_TOKEN.");
 if (!guildId) throw new Error("Set DISCORD_GUILD_ID.");
 
-class ConfirmCommand extends Command {
-  name = "confirm";
-  description = "Ask for confirmation";
-  kind = "slash" as const;
+const choose = onButton(async (context) => {
+  const choice = context.args[0];
+  if (choice !== "yes" && choice !== "no") {
+    throw new Error("The button choice is invalid.");
+  }
 
-  choose = onButton(async (context, args) => {
-    const choice = args[0];
-    if (choice !== "yes" && choice !== "no") {
-      throw new Error("The button choice is invalid.");
-    }
-
-    await context.update({
-      content: choice === "yes" ? "Confirmed." : "Cancelled.",
-      components: [],
-    });
+  await context.update({
+    content: choice === "yes" ? "Confirmed." : "Cancelled.",
+    components: [],
   });
+});
 
-  async run(context: CommandContext): Promise<void> {
+const confirm = command({
+  name: "confirm",
+  description: "Ask for confirmation",
+  listeners: { choose },
+  async run(context) {
     await context.reply({
       content: "Continue?",
       components: [
         {
           type: types.ComponentType.ActionRow,
           components: [
-            this.choose.button(
+            context.listeners.choose.button(
               { label: "Yes", style: types.ButtonStyle.Success },
               "yes",
             ),
-            this.choose.button(
+            context.listeners.choose.button(
               { label: "No", style: types.ButtonStyle.Danger },
               "no",
             ),
@@ -49,14 +47,14 @@ class ConfirmCommand extends Command {
         },
       ],
     });
-  }
-}
+  },
+});
 
 const client = new Client({
   token,
   intents: [Intents.Guilds],
   commands: {
-    commands: [new ConfirmCommand()],
+    commands: [confirm],
     publishOnStart: { scope: "guild", guildId },
   },
 });

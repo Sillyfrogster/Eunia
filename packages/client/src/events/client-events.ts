@@ -1,7 +1,6 @@
 import type {
-  AutocompleteContext,
-  CommandContext,
   CommandError,
+  CommandErrorContext,
   CommandHandleResult,
 } from "@eunia/commands";
 import type { CloseInfo, ReconnectInfo } from "@eunia/gateway";
@@ -133,7 +132,7 @@ export interface ClientEventMap {
   commandResult: [result: CommandHandleResult, source: Interaction | Message];
   commandError: [
     error: CommandError,
-    context?: CommandContext | AutocompleteContext,
+    context?: CommandErrorContext,
   ];
   clientError: [error: unknown, source: string];
 }

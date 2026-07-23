@@ -1013,6 +1013,19 @@ describe("Interaction", () => {
     if (second.kind !== "button") throw new Error("expected a button interaction");
     await second.defer();
     expect(rest.calls[1]?.body).toEqual({ type: 6 });
+    expect(second.deferredResponse).toBe("update");
+    expect(second.deferredEphemeral).toBe(false);
+
+    const privateUpdate = createInteraction(
+      componentInteraction(
+        { custom_id: "approve", component_type: ComponentType.Button },
+        { message: message() },
+      ),
+      context,
+    );
+    expect(() =>
+      privateUpdate.defer({ ephemeral: true }),
+    ).toThrow(RangeError);
   });
 
   test("opens modals from commands and rejects invalid verbs at runtime", async () => {

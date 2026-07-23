@@ -2,7 +2,7 @@ export type CommandErrorCode =
   | "invalid_definition"
   | "duplicate_command"
   | "registration_frozen"
-  | "invalid_option"
+  | "empty_publish"
   | "middleware_next_called_twice"
   | "execution_failed"
   | "autocomplete_failed"
@@ -51,10 +51,13 @@ export class RegistrationFrozenError extends CommandError {
   }
 }
 
-export class CommandOptionError extends CommandError {
-  constructor(message: string) {
-    super(message, "invalid_option");
-    this.name = "CommandOptionError";
+export class EmptyCommandPublishError extends CommandError {
+  constructor() {
+    super(
+      "No application commands are registered. Use clearPublishedCommands() to clear a Discord command scope.",
+      "empty_publish",
+    );
+    this.name = "EmptyCommandPublishError";
   }
 }
 
@@ -62,6 +65,13 @@ export class MiddlewareError extends CommandError {
   constructor(message = "Command middleware called next more than once.") {
     super(message, "middleware_next_called_twice");
     this.name = "MiddlewareError";
+  }
+}
+
+export class ReplyVisibilityMismatchError extends Error {
+  constructor() {
+    super("A deferred reply must keep the visibility chosen when it was deferred.");
+    this.name = "ReplyVisibilityMismatchError";
   }
 }
 
