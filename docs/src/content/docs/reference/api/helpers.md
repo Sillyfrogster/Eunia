@@ -1,9 +1,48 @@
 ---
 title: Helpers
-description: Embed, component, and modal template registries.
+description: Content template registries and Components V2 layout helpers.
 ---
 
 Template registries keep repeated payload shapes typed. A template receives fill values and returns one payload.
+
+## Build a Components V2 message
+
+`componentsV2` provides stateless factories for Discord's layout components. `message()` adds the required Components V2 flag, preserves other message flags, and runs Eunia's shared message checks.
+
+```ts
+const payload = componentsV2.message([
+  componentsV2.container(
+    [
+      componentsV2.text("Release 2.0"),
+      componentsV2.section(
+        ["Ready to publish", "All checks passed"],
+        componentsV2.thumbnail("https://example.com/release.png"),
+      ),
+      componentsV2.separator({ divider: true, spacing: 2 }),
+      componentsV2.file("release-notes.txt"),
+    ],
+    { accentColor: 0x5865f2 },
+  ),
+], {
+  files: [{ data: releaseNotes, name: "release-notes.txt" }],
+});
+
+await channel.send(payload);
+```
+
+| Factory | Result |
+| --- | --- |
+| `message(components, options?)` | A checked `MessageCreate` with `IsComponentsV2` set |
+| `text(content, options?)` | A text display |
+| `thumbnail(url, options?)` | A thumbnail accessory |
+| `section(content, accessory, options?)` | A section with one to three text displays |
+| `gallery(items, options?)` | A media gallery with one to ten items |
+| `file(filename, options?)` | A file component that uses `attachment://filename` |
+| `separator(options?)` | A separator |
+| `container(components, options?)` | A container with an optional RGB accent color |
+| `row(components, options?)` | One to five buttons or one select menu |
+
+Factories accept existing typed buttons and select menus, so listener components can be placed directly in a row. They return plain payload objects and do not retain builder state.
 
 ## Define a registry
 
@@ -47,4 +86,4 @@ Each factory returns an `EuniaModule`. Register only one template module for eac
 
 ## Types
 
-`TemplateMap`, `TemplateRegistry`, `EmbedTemplates`, `ComponentTemplates`, `ModalTemplates`, `ModalTemplatePayload`, `EmbedRegistry`, `ComponentRegistry`, and `ModalRegistry`.
+Components V2 options and inputs use names beginning with `ComponentsV2`. Template types include `TemplateMap`, `TemplateRegistry`, `EmbedTemplates`, `ComponentTemplates`, `ModalTemplates`, `ModalTemplatePayload`, `EmbedRegistry`, `ComponentRegistry`, and `ModalRegistry`.
