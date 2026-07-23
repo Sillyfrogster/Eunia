@@ -140,13 +140,44 @@ export interface SlashCommandContext extends CommandContextBase {
   defer(options?: { readonly ephemeral?: boolean }): Promise<boolean>;
 }
 
+export interface UserCommandTarget {
+  readonly id: string;
+  readonly raw: Readonly<types.User>;
+  readonly user: User;
+  readonly member?: Readonly<Omit<types.GuildMember, "user" | "deaf" | "mute">>;
+}
+
+export interface UserCommandContext extends CommandContextBase {
+  readonly kind: "user";
+  readonly interaction: Interaction<"command">;
+  readonly target: UserCommandTarget;
+  defer(options?: { readonly ephemeral?: boolean }): Promise<boolean>;
+}
+
+export interface MessageCommandTarget {
+  readonly id: string;
+  readonly raw: Readonly<Partial<types.Message>>;
+  readonly message?: Message;
+}
+
+export interface MessageCommandContext extends CommandContextBase {
+  readonly kind: "message";
+  readonly interaction: Interaction<"command">;
+  readonly target: MessageCommandTarget;
+  defer(options?: { readonly ephemeral?: boolean }): Promise<boolean>;
+}
+
 export interface PrefixCommandContext extends CommandContextBase {
   readonly kind: "prefix";
   readonly message: Message;
   readonly prefix: string;
 }
 
-export type CommandContext = SlashCommandContext | PrefixCommandContext;
+export type CommandContext =
+  | SlashCommandContext
+  | PrefixCommandContext
+  | UserCommandContext
+  | MessageCommandContext;
 
 export interface AutocompleteContext extends OptionAccess {
   readonly kind: "autocomplete";

@@ -1,9 +1,9 @@
 # Commands
 
-Eunia's command module uses the same command tree for Discord slash commands
-and optional message prefixes. The class body is the command: every fact is a
-named field, every behavior a method, no constructor. Each invocation gets a
-new context.
+Eunia's command module handles Discord chat input, user, and message commands,
+along with optional message prefixes. The class body is the command: every
+fact is a named field, every behavior a method, no constructor. Each
+invocation gets a new context.
 
 ```sh
 bun add @sillyfrogster/eunia@alpha
@@ -40,10 +40,31 @@ class GreetCommand extends Command {
 const commands = new CommandManager(host).register(new GreetCommand());
 ```
 
-`kind` is mandatory: `"slash"`, `"prefix"`, or `"hybrid"`. A field with no
-effect for the declared kind — aliases on a slash-only command, `autoDefer` on
-a prefix-only command — is a registration error, never silently ignored.
-`rateLimit` applies to every kind because the cooldown store enforces it.
+`kind` is mandatory on `Command`: `"slash"`, `"prefix"`, or `"hybrid"`. A
+field with no effect for the declared kind — aliases on a slash-only command,
+`autoDefer` on a prefix-only command — is a registration error, never silently
+ignored. `rateLimit` applies to every kind because the cooldown store enforces
+it.
+
+Extend `UserCommand` or `MessageCommand` for a context menu command. These
+commands do not take a description or options. Their contexts expose the
+selected target:
+
+```ts
+class SaveMessage extends MessageCommand {
+  name = "Save Message";
+
+  async run(context: MessageCommandContext): Promise<void> {
+    await archive.save(context.target.id, context.target.raw);
+    await context.reply("Saved.");
+  }
+}
+```
+
+A user target includes its raw payload, a `User` structure, and guild member
+data when Discord sends it. A message target always includes the partial raw
+payload. It also includes a `Message` structure when the resolved payload has
+all required message fields.
 
 Options are fields. The field's key in the class body becomes the option's
 wire name, `required` controls whether `context.get()` returns the plain type
@@ -85,8 +106,9 @@ cap is validated; args travel as strings and arrive as strings.
 
 A `CommandGroup` uses the same field anatomy plus `children`, a list of child
 classes. Shared policy (permissions, `guildOnly`, `meta`) lives on the group.
-A group may contain commands or one more level of groups; the manager rejects
-trees Discord cannot register, and every child must share one kind.
+A chat input or prefix group may contain commands or one more level of groups;
+the manager rejects trees Discord cannot register, and every child must share
+one kind. Context menu commands cannot be grouped.
 
 `publish()` uses Discord's bulk overwrite endpoint. It replaces every
 application command in the selected global or guild scope; prefix-only

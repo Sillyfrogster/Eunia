@@ -55,7 +55,13 @@ export function instantiateNode(ctor: CommandNodeClass): CommandNode {
   return instance;
 }
 
-const COMMAND_KINDS: ReadonlySet<string> = new Set(["slash", "prefix", "hybrid"]);
+const COMMAND_KINDS: ReadonlySet<string> = new Set([
+  "slash",
+  "prefix",
+  "hybrid",
+  "user",
+  "message",
+]);
 
 function prepareCommand(command: Command): PreparedCommand {
   if (!COMMAND_KINDS.has(command.kind)) {
@@ -141,6 +147,11 @@ function prepareGroup(group: CommandGroup): PreparedGroup {
     );
   }
   const commandKind = children[0]!.commandKind;
+  if (commandKind === "user" || commandKind === "message") {
+    throw new CommandValidationError(
+      `Command group "${group.name}" contains context commands, which cannot be grouped.`,
+    );
+  }
   if (commandKind === "slash" && group.aliases.length > 0) {
     throw new CommandValidationError(
       `Command group "${group.name}" declares aliases but its commands are slash-only.`,
@@ -178,6 +189,19 @@ function validateKindApplicability(
   command: Command,
   options: readonly CommandOptionDefinition[],
 ): void {
+  if (command.kind === "user" || command.kind === "message") {
+    if (command.aliases.length > 0) {
+      throw new CommandValidationError(
+        `Context command "${command.name}" cannot declare aliases.`,
+      );
+    }
+    if (options.length > 0) {
+      throw new CommandValidationError(
+        `Context command "${command.name}" cannot declare options.`,
+      );
+    }
+  }
+
   if (command.kind === "slash") {
     if (command.aliases.length > 0) {
       throw new CommandValidationError(

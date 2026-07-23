@@ -5,8 +5,8 @@
 [![Discord support server](https://img.shields.io/badge/Discord-Support_server-5865F2?logo=discord&logoColor=white)](https://discord.gg/WuPqrRtYHX)
 
 Eunia is a TypeScript Discord library built for Bun. It keeps the core small,
-lets you replace storage and other services, and includes a slash-first command
-framework.
+lets you replace storage and other services, and includes an application and
+prefix command framework.
 
 Eunia is in alpha. The public API may change before the first stable release.
 Voice support is outside this release and will be handled separately.

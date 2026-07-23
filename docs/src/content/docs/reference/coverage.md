@@ -23,7 +23,8 @@ to call a route with `client.rest` does not mean Eunia implements that feature.
 | Area | Status | Notes |
 | --- | --- | --- |
 | Chat input commands | Built in | Options, groups, autocomplete, publishing, permission checks, middleware, cooldowns, and delayed replies |
-| User, message, and Entry Point commands | Data only | The Discord data is typed, but Eunia cannot register or run these commands yet |
+| User and message commands | Built in | Registration, publishing, typed targets, permission checks, middleware, cooldowns, and delayed replies |
+| Entry Point commands | Data only | The Discord data is typed, but Eunia cannot register or run these commands yet |
 | Prefix commands | Built in | Uses the same command tree and parses common option types |
 | Buttons, selects, and modals | Built in | Includes listeners tied to a command and stable custom IDs |
 | Interaction delivery | Partly built in | Interactions received through the Gateway can be answered; Eunia cannot receive interactions sent over HTTP |

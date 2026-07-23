@@ -3,7 +3,7 @@ title: Commands
 description: Define, register, and publish commands.
 ---
 
-Eunia command classes keep command data and behavior together. A class can handle a slash command, a prefix command, or both.
+Eunia command classes keep command data and behavior together. A class can handle a chat input command, a context menu command, a prefix command, or both chat input and prefix use.
 
 ## Define a command
 
@@ -34,6 +34,28 @@ export class GreetCommand extends Command {
 
 Eunia validates names, descriptions, option order, limits, ranges, command size, group depth, and settings that do not apply to the selected command kind.
 
+## Add a context menu command
+
+Extend `UserCommand` or `MessageCommand`. Discord supplies the selected target instead of command options.
+
+```ts
+import {
+  MessageCommand,
+  type MessageCommandContext,
+} from "@sillyfrogster/eunia";
+
+class SaveMessageCommand extends MessageCommand {
+  name = "Save Message";
+
+  async run(context: MessageCommandContext): Promise<void> {
+    await archive.save(context.target.id, context.target.raw);
+    await context.reply("Saved.");
+  }
+}
+```
+
+`UserCommandContext.target` includes a `User` structure and raw guild member data when available. `MessageCommandContext.target.raw` is the partial message payload from Discord. `target.message` is available when that payload contains all fields needed by the `Message` structure.
+
 ## Register commands
 
 Pass commands to the client or register them before startup:
@@ -51,7 +73,7 @@ await client.start();
 
 Registration closes when command handling or publishing begins.
 
-## Publish slash commands
+## Publish application commands
 
 Use one development server while commands are changing:
 
@@ -69,7 +91,7 @@ Publishing uses Discord's bulk overwrite. The published list replaces every comm
 
 ## Groups and subcommands
 
-Discord supports a root command, an optional subcommand group, and a subcommand. `CommandGroup` uses that shape:
+Discord chat input commands support a root command, an optional subcommand group, and a subcommand. `CommandGroup` uses that shape:
 
 ```ts
 class AlertsGroup extends CommandGroup {

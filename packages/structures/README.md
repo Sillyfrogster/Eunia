@@ -63,6 +63,11 @@ acknowledgement, `interaction.original` exposes `get`, `edit`, and `delete`
 for the @original message, and `followup` sends additional messages. Modal
 submissions expose `field()` and `textField()`.
 
+`resolvedUser()`, `resolvedChannel()`, `resolvedRole()`, and
+`resolvedMessage()` hydrate resolved interaction data when the payload has the
+fields required by that structure. Resolved messages can be partial, so
+`resolvedMessage()` returns `undefined` when Discord omits required fields.
+
 An interaction accepts one initial response. The response state is claimed
 before the HTTP request begins, so two concurrent handlers cannot both
 respond. A failed initial request returns the interaction to `pending`, so it
