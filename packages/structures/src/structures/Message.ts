@@ -7,6 +7,7 @@ import {
 } from "../context";
 import type { Sendable } from "../utils/messages";
 import { normalizeSendable, splitMessageFiles } from "../utils/messages";
+import { auditLogRequest, type AuditLogOptions } from "../utils/rest";
 import { BaseStructure } from "./BaseStructure";
 import { Channel } from "./Channel";
 import { Guild } from "./Guild";
@@ -144,22 +145,25 @@ export class Message extends BaseStructure<types.Message> {
     );
   }
 
-  async pin(): Promise<void> {
+  async pin(audit: AuditLogOptions = {}): Promise<void> {
     await this.ctx.rest.put(
       routePath("/channels/{channelId}/messages/pins/{messageId}", {
         channelId: this.channelId,
         messageId: this.id,
       }),
+      undefined,
+      auditLogRequest(audit),
     );
     this.cachePinnedState(true);
   }
 
-  async unpin(): Promise<void> {
+  async unpin(audit: AuditLogOptions = {}): Promise<void> {
     await this.ctx.rest.delete(
       routePath("/channels/{channelId}/messages/pins/{messageId}", {
         channelId: this.channelId,
         messageId: this.id,
       }),
+      auditLogRequest(audit),
     );
     this.cachePinnedState(false);
   }

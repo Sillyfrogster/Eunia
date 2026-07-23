@@ -27,6 +27,10 @@ export type {
   GatewayBotInfo,
   GatewayActivity,
   GatewayPresence,
+  RequestChannelInfoData,
   RequestGuildMembersData,
+  RequestSoundboardSoundsData,
+  UpdateVoiceStateData,
+  ChannelInfoField,
 } from "./types";
 export { ActivityType } from "./types";

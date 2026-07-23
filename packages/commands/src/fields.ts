@@ -1,11 +1,10 @@
-/**
- * Option fields. A command declares `sides = option.integer({ required: true })`
- * and reads it with `ctx.get(this.sides)`; the field's key in the class body
- * becomes the option's wire name at registration. The Value/Required type
- * parameters exist only for `ctx.get` inference.
- */
 import { ApplicationCommandOptionType, type ChannelType, type Localizations } from "@eunia/types";
+import {
+  freezeChoices,
+  freezeLocalizations,
+} from "./configuration";
 import type {
+  AutocompleteHandler,
   CommandChoice,
   ResolvedAttachment,
   ResolvedChannel,
@@ -21,21 +20,28 @@ interface OptionConfigBase {
   readonly required?: boolean;
 }
 
-export interface StringOptionConfig extends OptionConfigBase {
-  readonly choices?: readonly CommandChoice<string>[];
-  readonly autocomplete?: boolean;
+type CompletionConfig<T extends string | number> =
+  | {
+      readonly choices?: readonly CommandChoice<T>[];
+      readonly autocomplete?: never;
+    }
+  | {
+      readonly choices?: never;
+      readonly autocomplete?: AutocompleteHandler<T>;
+    };
+
+export type StringOptionConfig = OptionConfigBase &
+  CompletionConfig<string> & {
   readonly minLength?: number;
   readonly maxLength?: number;
-  /** Prefix parsing: `rest: true` consumes the remaining input as one value. */
   readonly prefix?: { readonly rest?: boolean };
-}
+  };
 
-export interface NumericOptionConfig extends OptionConfigBase {
-  readonly choices?: readonly CommandChoice<number>[];
-  readonly autocomplete?: boolean;
+export type NumericOptionConfig = OptionConfigBase &
+  CompletionConfig<number> & {
   readonly minValue?: number;
   readonly maxValue?: number;
-}
+  };
 
 export interface BooleanOptionConfig extends OptionConfigBase {}
 export interface UserOptionConfig extends OptionConfigBase {}
@@ -53,59 +59,154 @@ export type OptionConfig =
   | BooleanOptionConfig
   | ChannelOptionConfig;
 
-export class OptionField<Value, Required extends boolean = boolean> {
-  /** Wire name; assigned from the class field key at registration. */
-  name = "";
-  declare readonly valueType: Value;
-  declare readonly requiredType: Required;
+declare const optionFieldBrand: unique symbol;
 
+export interface OptionField<
+  Value,
+  Required extends boolean = boolean,
+> {
+  readonly [optionFieldBrand]: {
+    readonly value: Value;
+    readonly required: Required;
+  };
+  readonly type: ApplicationCommandOptionType;
+  readonly config: OptionConfig;
+  readonly required: boolean;
+  readonly autocomplete: AutocompleteHandler | undefined;
+}
+
+class OptionFieldDefinition {
   constructor(
     readonly type: ApplicationCommandOptionType,
     readonly config: OptionConfig,
-  ) {}
+  ) {
+    Object.freeze(this);
+  }
 
   get required(): boolean {
     return this.config.required === true;
   }
+
+  get autocomplete(): AutocompleteHandler | undefined {
+    const handler = "autocomplete" in this.config
+      ? this.config.autocomplete
+      : undefined;
+    return handler as AutocompleteHandler | undefined;
+  }
 }
 
-type RequiredOf<C extends OptionConfigBase | undefined> = C extends { required: true }
-  ? true
-  : false;
+export function isOptionField(
+  value: unknown,
+): value is OptionField<unknown, boolean> {
+  return value instanceof OptionFieldDefinition;
+}
 
-function field<Value, C extends OptionConfigBase | undefined>(
+type WithRequired<C, R extends boolean> =
+  C extends unknown
+    ? Omit<C, "required"> & {
+        readonly required?: R;
+      }
+    : never;
+
+function field<Value, R extends boolean>(
   type: ApplicationCommandOptionType,
+  config: OptionConfigBase | undefined,
+): OptionField<Value, R> {
+  return new OptionFieldDefinition(
+    type,
+    freezeOptionConfig(config),
+  ) as OptionField<Value, R>;
+}
+
+function freezeOptionConfig<C extends OptionConfigBase | undefined>(
   config: C,
-): OptionField<Value, RequiredOf<C>> {
-  return new OptionField<Value, RequiredOf<C>>(type, { ...(config ?? {}) });
+): OptionConfig {
+  const value: OptionConfigBase = config ?? {};
+  const choices = (value as StringOptionConfig | NumericOptionConfig).choices;
+  const channelTypes = (value as ChannelOptionConfig).channelTypes;
+  const prefix = (value as StringOptionConfig).prefix;
+  return Object.freeze({
+    ...value,
+    ...(value.nameLocalizations === undefined
+      ? {}
+      : {
+          nameLocalizations: freezeLocalizations(
+            value.nameLocalizations,
+          ),
+        }),
+    ...(value.descriptionLocalizations === undefined
+      ? {}
+      : {
+          descriptionLocalizations: freezeLocalizations(
+            value.descriptionLocalizations,
+          ),
+        }),
+    ...(choices === undefined
+      ? {}
+      : {
+          choices: freezeChoices(
+            choices as readonly CommandChoice<string | number>[],
+          ),
+        }),
+    ...(channelTypes === undefined
+      ? {}
+      : { channelTypes: Object.freeze([...channelTypes]) }),
+    ...(prefix === undefined
+      ? {}
+      : { prefix: Object.freeze({ ...prefix }) }),
+  }) as OptionConfig;
 }
 
 export const option = {
-  string<const C extends StringOptionConfig | undefined = undefined>(config?: C) {
-    return field<string, C>(ApplicationCommandOptionType.String, config as C);
+  string<const R extends boolean = false>(
+    config?: WithRequired<StringOptionConfig, R>,
+  ) {
+    return field<string, R>(ApplicationCommandOptionType.String, config);
   },
-  integer<const C extends NumericOptionConfig | undefined = undefined>(config?: C) {
-    return field<number, C>(ApplicationCommandOptionType.Integer, config as C);
+  integer<const R extends boolean = false>(
+    config?: WithRequired<NumericOptionConfig, R>,
+  ) {
+    return field<number, R>(ApplicationCommandOptionType.Integer, config);
   },
-  number<const C extends NumericOptionConfig | undefined = undefined>(config?: C) {
-    return field<number, C>(ApplicationCommandOptionType.Number, config as C);
+  number<const R extends boolean = false>(
+    config?: WithRequired<NumericOptionConfig, R>,
+  ) {
+    return field<number, R>(ApplicationCommandOptionType.Number, config);
   },
-  boolean<const C extends BooleanOptionConfig | undefined = undefined>(config?: C) {
-    return field<boolean, C>(ApplicationCommandOptionType.Boolean, config as C);
+  boolean<const R extends boolean = false>(
+    config?: WithRequired<BooleanOptionConfig, R>,
+  ) {
+    return field<boolean, R>(ApplicationCommandOptionType.Boolean, config);
   },
-  user<const C extends UserOptionConfig | undefined = undefined>(config?: C) {
-    return field<ResolvedUser, C>(ApplicationCommandOptionType.User, config as C);
+  user<const R extends boolean = false>(
+    config?: WithRequired<UserOptionConfig, R>,
+  ) {
+    return field<ResolvedUser, R>(ApplicationCommandOptionType.User, config);
   },
-  channel<const C extends ChannelOptionConfig | undefined = undefined>(config?: C) {
-    return field<ResolvedChannel, C>(ApplicationCommandOptionType.Channel, config as C);
+  channel<const R extends boolean = false>(
+    config?: WithRequired<ChannelOptionConfig, R>,
+  ) {
+    return field<ResolvedChannel, R>(ApplicationCommandOptionType.Channel, config);
   },
-  role<const C extends RoleOptionConfig | undefined = undefined>(config?: C) {
-    return field<ResolvedRole, C>(ApplicationCommandOptionType.Role, config as C);
+  role<const R extends boolean = false>(
+    config?: WithRequired<RoleOptionConfig, R>,
+  ) {
+    return field<ResolvedRole, R>(ApplicationCommandOptionType.Role, config);
   },
-  mentionable<const C extends MentionableOptionConfig | undefined = undefined>(config?: C) {
-    return field<ResolvedMentionable, C>(ApplicationCommandOptionType.Mentionable, config as C);
+  mentionable<const R extends boolean = false>(
+    config?: WithRequired<MentionableOptionConfig, R>,
+  ) {
+    return field<ResolvedMentionable, R>(
+      ApplicationCommandOptionType.Mentionable,
+      config,
+    );
   },
-  attachment<const C extends AttachmentOptionConfig | undefined = undefined>(config?: C) {
-    return field<ResolvedAttachment, C>(ApplicationCommandOptionType.Attachment, config as C);
+  attachment<const R extends boolean = false>(
+    config?: WithRequired<AttachmentOptionConfig, R>,
+  ) {
+    return field<ResolvedAttachment, R>(
+      ApplicationCommandOptionType.Attachment,
+      config,
+    );
   },
 };

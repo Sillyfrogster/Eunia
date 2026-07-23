@@ -14,12 +14,12 @@ import { Client, Command, Intents, type ClientOptions } from "@sillyfrogster/eun
 | Area | Includes |
 | --- | --- |
 | [Client](./client/) | Client options, lifecycle, events, domains, modules, and services |
-| [Commands](./commands/) | Command classes, options, listeners, middleware, guards, cooldowns, and errors |
+| [Commands](./commands/) | Command definitions, options, contexts, listeners, access, manager methods, and errors |
 | [Structures](./structures/) | Users, guilds, channels, messages, members, roles, and interactions |
 | [Cache](./cache/) | Cache domains, stores, policies, Redis, Valkey, and custom adapters |
 | [Gateway](./gateway/) | Shards, intents, presence, member requests, and gateway constants |
 | [REST](./rest/) | Requests, routes, uploads, rate limits, diagnostics, and errors |
-| [Helpers](./helpers/) | Embed, component, and modal template registries |
+| [Helpers](./helpers/) | Content template registries and Components V2 layout helpers |
 | [Logging](./logging/) | Logger interface, console logger, silent logger, and formatting |
 | [Discord types](./types/) | Raw Discord payloads, enums, permissions, and gateway events |
 

@@ -56,22 +56,22 @@ const url = (path: string) => `${base}/${path}`;
   <div class="section-heading coverage-heading">
     <div>
       <h2 id="coverage-heading">Feature coverage</h2>
-      <p>What has a high-level API and what does not.</p>
+      <p>What Eunia handles and what you handle yourself.</p>
     </div>
     <a href={url("reference/coverage/")}>View details <span aria-hidden="true">→</span></a>
   </div>
   <div class="coverage-list">
     <article>
-      <h3><span aria-hidden="true">✓</span> Ready</h3>
-      <p>Commands, messages, components, guild administration, caching, gateway, and REST.</p>
+      <h3><span aria-hidden="true">✓</span> Built in</h3>
+      <p>Commands, components, pins, Discord connections and requests, and caching.</p>
     </article>
     <article>
-      <h3><span aria-hidden="true">→</span> Reachable</h3>
-      <p>Less common events, administrative endpoints, and Components V2 layouts.</p>
+      <h3><span aria-hidden="true">→</span> Direct access</h3>
+      <p>Listen for any Discord event or call any Discord route when no Eunia method exists.</p>
     </article>
     <article>
       <h3><span aria-hidden="true">×</span> Not included</h3>
-      <p>Voice connections, codecs, players, receive pipelines, and process supervision.</p>
+      <p>Receiving interactions or Event Webhooks over HTTP, voice audio, and process management.</p>
     </article>
   </div>
 </section>

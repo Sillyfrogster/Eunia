@@ -762,6 +762,16 @@ export interface Message {
   channel_type?: ChannelType;
 }
 
+export interface MessagePin {
+  pinned_at: ISO8601Timestamp;
+  message: Message;
+}
+
+export interface MessagePinResponse {
+  items: MessagePin[];
+  has_more: boolean;
+}
+
 export interface ResolvedData {
   users?: Record<Snowflake, User>;
   members?: Record<Snowflake, Omit<GuildMember, "user" | "deaf" | "mute">>;

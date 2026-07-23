@@ -7,7 +7,7 @@ export const messageHandlers: DispatchHandlerMap = {
     const raw = data as types.Message;
     cacheMessage(ctx, raw);
     const message = new Message(raw, ctx);
-    void client.handleCommand(message).catch(() => undefined);
+    client.handleGatewayCommand(message);
     client.emit("messageCreate", message);
   },
 

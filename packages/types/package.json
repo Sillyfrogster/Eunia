@@ -1,6 +1,6 @@
 {
   "name": "@eunia/types",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "description": "Protocol types and constants for Eunia",
   "type": "module",

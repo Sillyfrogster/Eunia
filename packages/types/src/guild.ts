@@ -220,6 +220,43 @@ export interface GuildBan {
   user: User;
 }
 
+export enum IntegrationExpireBehavior {
+  RemoveRole = 0,
+  Kick = 1,
+}
+
+export interface IntegrationAccount {
+  id: string;
+  name: string;
+}
+
+export interface IntegrationApplication {
+  id: Snowflake;
+  name: string;
+  icon: string | null;
+  description: string;
+  bot?: User;
+}
+
+export interface Integration {
+  id: Snowflake;
+  name: string;
+  type: string;
+  enabled: boolean;
+  syncing?: boolean;
+  role_id?: Snowflake;
+  enable_emoticons?: boolean;
+  expire_behavior?: IntegrationExpireBehavior;
+  expire_grace_period?: number;
+  user?: User;
+  account: IntegrationAccount;
+  synced_at?: ISO8601Timestamp;
+  subscriber_count?: number;
+  revoked?: boolean;
+  application?: IntegrationApplication;
+  scopes?: string[];
+}
+
 export interface WelcomeScreenChannel {
   channel_id: Snowflake;
   description: string;

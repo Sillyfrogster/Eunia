@@ -1,6 +1,6 @@
 {
   "name": "@sillyfrogster/eunia",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha.1",
   "description": "A modular TypeScript Discord library built for Bun",
   "keywords": ["discord", "discord-api", "bot", "bun", "typescript"],
   "type": "module",

@@ -36,8 +36,11 @@ import type {
   HelloData,
   IdentifyData,
   ReadyData,
+  RequestChannelInfoData,
   RequestGuildMembersData,
+  RequestSoundboardSoundsData,
   ResumeData,
+  UpdateVoiceStateData,
 } from "./types";
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -232,6 +235,52 @@ export class Shard extends EventEmitter {
       throw new RangeError("Member request nonces cannot exceed 32 bytes.");
     }
     return this.enqueueSend({ op: GatewayOpcode.RequestGuildMembers, d: request });
+  }
+
+  /** Requests soundboard sounds for guilds assigned to this shard. */
+  requestSoundboardSounds(request: RequestSoundboardSoundsData): Promise<void> {
+    this.assertReady("request soundboard sounds");
+    if (request.guild_ids.length === 0) {
+      throw new RangeError("Soundboard requests need at least one guild id.");
+    }
+    if (request.guild_ids.some((guildId) => !/^\d+$/.test(guildId))) {
+      throw new TypeError("Soundboard request guild ids must be snowflakes.");
+    }
+    return this.enqueueSend({
+      op: GatewayOpcode.RequestSoundboardSounds,
+      d: request,
+    });
+  }
+
+  /** Requests ephemeral channel data for one guild. */
+  requestChannelInfo(request: RequestChannelInfoData): Promise<void> {
+    this.assertReady("request channel info");
+    if (!/^\d+$/.test(request.guild_id)) {
+      throw new TypeError("Channel info requests require a guild snowflake.");
+    }
+    if (request.fields.length === 0) {
+      throw new RangeError("Channel info requests need at least one field.");
+    }
+    if (
+      request.fields.some(
+        (field) => field !== "status" && field !== "voice_start_time",
+      )
+    ) {
+      throw new TypeError("Channel info requests contain an unknown field.");
+    }
+    return this.enqueueSend({ op: GatewayOpcode.RequestChannelInfo, d: request });
+  }
+
+  /** Joins, moves, updates, or disconnects this shard's voice connection. */
+  updateVoiceState(state: UpdateVoiceStateData): Promise<void> {
+    this.assertReady("update voice state");
+    if (!/^\d+$/.test(state.guild_id)) {
+      throw new TypeError("Voice state updates require a guild snowflake.");
+    }
+    if (state.channel_id !== null && !/^\d+$/.test(state.channel_id)) {
+      throw new TypeError("Voice state channel ids must be snowflakes or null.");
+    }
+    return this.enqueueSend({ op: GatewayOpcode.VoiceStateUpdate, d: state });
   }
 
   /**
