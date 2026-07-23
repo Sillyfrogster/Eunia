@@ -14,7 +14,7 @@ import { Client, Command, Intents, type ClientOptions } from "@sillyfrogster/eun
 | Area | Includes |
 | --- | --- |
 | [Client](./client/) | Client options, lifecycle, events, domains, modules, and services |
-| [Commands](./commands/) | Command classes, options, listeners, middleware, guards, cooldowns, and errors |
+| [Commands](./commands/) | Command definitions, options, contexts, listeners, access, manager methods, and errors |
 | [Structures](./structures/) | Users, guilds, channels, messages, members, roles, and interactions |
 | [Cache](./cache/) | Cache domains, stores, policies, Redis, Valkey, and custom adapters |
 | [Gateway](./gateway/) | Shards, intents, presence, member requests, and gateway constants |

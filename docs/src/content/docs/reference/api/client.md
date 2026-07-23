@@ -27,7 +27,21 @@ new Client(options: ClientOptions)
 | `modules` | `readonly EuniaModule[]` | Modules to load before connecting. |
 | `logger` | `Logger` | Logger shared by the client and its children. |
 
-`ClientGatewayOptions` accepts `shards`, `presence`, and `largeThreshold`. `ClientCommandOptions` adds `commands` and `publishOnStart` to `CommandManagerOptions`.
+`ClientGatewayOptions` accepts `shards`, `presence`, and `largeThreshold`.
+
+`ClientCommandOptions` extends `CommandManagerOptions` with:
+
+| Field | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `commands` | `readonly CommandNode[]` | `[]` | Definitions to register during construction. |
+| `publishOnStart` | `false \| CommandPublishTarget` | `false` | Publish after the gateway is ready. |
+| `autoHandle` | `boolean` | `true` | Route gateway interactions and messages through the command manager. |
+
+Set `autoHandle: false` when an event listener or another router owns command
+dispatch. The client still caches, hydrates, and emits `interactionCreate` and
+`messageCreate`. Call `client.handleCommand(source)` for each source the
+command framework should receive. This setting does not change registration or
+`publishOnStart`.
 
 ### Properties
 
@@ -56,6 +70,7 @@ new Client(options: ClientOptions)
 | `start()` | `Promise<this>` |
 | `stop()` | `Promise<void>` |
 | `destroy()` | `Promise<void>` |
+| `handleCommand(source)` | `Promise<CommandHandleResult>` |
 | `updatePresence(presence)` | `Promise<void>` |
 | `requestGuildMembers(request)` | `Promise<void>` |
 | `requestSoundboardSounds(request)` | `Promise<void>` |
@@ -63,6 +78,8 @@ new Client(options: ClientOptions)
 | `updateVoiceState(state)` | `Promise<void>` |
 
 Register modules before calling `start`. `destroy` is an alias for `stop`.
+`handleCommand` uses the client's prefix permission lookup and emits
+`commandResult` when the manager recognizes the source.
 
 ## Resource domains
 
