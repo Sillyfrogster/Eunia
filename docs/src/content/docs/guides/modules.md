@@ -72,16 +72,46 @@ Registering the same key twice is an error.
 
 ## Commands and cache domains
 
-Register commands during setup:
+Register command definitions during setup. Build them with the services they need:
 
 ```ts
+interface ModerationCases {
+  record(action: string, userId: string): Promise<void>;
+}
+
+function createModerationCommands(cases: ModerationCases) {
+  const ban = command({
+    name: "ban",
+    description: "Ban a user",
+    options: {
+      user: option.user({
+        description: "The user to ban",
+        required: true,
+      }),
+    },
+    async run(context) {
+      await cases.record("ban", context.options.user.id);
+      await context.reply(`Banned <@${context.options.user.id}>.`);
+    },
+  });
+
+  return [ban] as const;
+}
+
 export const moderationModule: EuniaModule = {
   name: "moderation",
   setup(client) {
-    client.commands.register(new BanCommand(), new TimeoutCommand());
+    const cases =
+      client.services.get<ModerationCases>("moderation-cases");
+
+    client.commands.register(
+      ...createModerationCommands(cases),
+    );
   },
 };
 ```
+
+The service enters through a normal function argument. The command handler keeps it through a closure and does not need a client or service registry reference.
 
 Create a module-owned cache domain instead of adding fields to the built-in cache:
 
